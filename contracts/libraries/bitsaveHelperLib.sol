@@ -51,30 +51,30 @@ library BitsaveHelperLib {
         return token.approve(toApproveUserAddress, amountToApprove);
       }
 
-    function transferToken(
-        address token,
-        address recipient,
-        uint amount
-    ) internal {
-        IZRC20 Token = IZRC20(token);
-        (address gasZRC20, uint256 gasFee) = Token.withdrawGasFee();
-        gasFee = gasFee * 2;
-        // BUG: uses gasFee * 2
-        if (gasZRC20 != token) revert WrongGasContract();
-        if (gasFee > amount) revert NotEnoughToPayGasFee();
-        // convert address to Byte
-        bytes32 userAddressBytes32 = BytesHelperLib.addressToBytes(recipient);
-        bytes memory userAddressBytes = BytesHelperLib.bytes32ToBytes(userAddressBytes32);
-        Token.withdraw(
-            userAddressBytes,
-            amount
-        );
-
-        emit TokenWithdrawal(
-            address(this),
-            userAddressBytes,
-            amount
-        );
-    }
+    // function transferToken(
+    //     address token,
+    //     address recipient,
+    //     uint amount
+    // ) internal {
+    //     IZRC20 Token = IZRC20(token);
+    //     (address gasZRC20, uint256 gasFee) = Token.withdrawGasFee();
+    //     gasFee = gasFee * 2;
+    //     // BUG: uses gasFee * 2
+    //     if (gasZRC20 != token) revert WrongGasContract();
+    //     if (gasFee > amount) revert NotEnoughToPayGasFee();
+    //     // convert address to Byte
+    //     bytes32 userAddressBytes32 = BytesHelperLib.addressToBytes(recipient);
+    //     bytes memory userAddressBytes = BytesHelperLib.bytes32ToBytes(userAddressBytes32);
+    //     Token.withdraw(
+    //         userAddressBytes,
+    //         amount
+    //     );
+    //
+    //     emit TokenWithdrawal(
+    //         address(this),
+    //         userAddressBytes,
+    //         amount
+    //     );
+    // }
 
 }

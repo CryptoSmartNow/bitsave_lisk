@@ -46,7 +46,7 @@ contract ChildBitsave {
 
   modifier bitsaveOnly() {
     if (msg.sender != bitsaveAddress)
-      revert(BitsaveHelperLib.CallNotFromBitsave());
+      revert BitsaveHelperLib.CallNotFromBitsave();
     _;
   }
 
@@ -70,17 +70,17 @@ contract ChildBitsave {
         // calculate interest
         uint accumulatedInterest = 3; // todo: create interest formulae
 
-        if (isSafeMode) {
-            handleTokenRetrieving(
-                stableCoin,
-                amountToRetrieve
-            );
-        }else {
-            handleTokenRetrieving(
-                tokenId,
-                amountToRetrieve
-            );
-        }
+        // if (isSafeMode) {
+        //     handleTokenRetrieving(
+        //         stableCoin,
+        //         amountToRetrieve
+        //     );
+        // }else {
+        //     handleTokenRetrieving(
+        //         tokenId,
+        //         amountToRetrieve
+        //     );
+        // }
 
         // store saving to map of savings
         savings[name] = SavingDataStruct({
@@ -94,7 +94,7 @@ contract ChildBitsave {
             isValid : true
         });
 
-        addSavingName(name);
+        // addSavingName(name);
 
         emit BitsaveHelperLib.SavingCreated(
             name,

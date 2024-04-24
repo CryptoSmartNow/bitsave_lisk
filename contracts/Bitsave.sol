@@ -41,13 +41,22 @@ contract Bitsave {
     userCount = 0;
   }
 
+  modifier registeredOnly(address sender) {
+    require(
+      addressToUserBS[sender] != address(0),
+      "User is not registered"
+    );
+    _;
+  }
+
   function joinBitsave(
     ) public payable returns (address) {
         if (msg.value <= JoinLimitFee)
-            revert bitsaveHelperLib.AmountNotEnough();
+            revert BitsaveHelperLib.AmountNotEnough();
         // deploy child contract for user
+        address ownerAddress = msg.sender;
         address userBSAddress = address(
-            new ChildBitsave(msg.sender, stableCoin)
+            new ChildBitsave(msg.sender, address(stableCoin))
         );
         addressToUserBS[ownerAddress] = userBSAddress;
         userCount += 1;
@@ -59,58 +68,58 @@ contract Bitsave {
         return addressToUserBS[msg.sender];
     }
 
-    function createSaving(
-        address ownerAddress,
-        string memory nameOfSaving,
-        uint256 maturityTime,
-        uint256 startTime,
-        uint8 penaltyPercentage,
-        // safe/risk mode
-        bool safeMode,
-        address tokenToSave,
-        uint amount
-    ) internal registeredOnly(ownerAddress) {
-        if (block.timestamp > maturityTime)
-            revert BitsaveHelperLib.InvalidTime();
-
-        address savingToken = tokenToSave;
-        // uint amountOfWeiSent;
-        uint amountToSave = amount;
-        // user's child contract address
-        address payable userChildContractAddress = getUserChildContractAddress(
-            ownerAddress
-        );
-
-        // functionality for creating savings
-        if (safeMode) {
-            amountToSave = crossChainSwap(
-                savingToken,
-                stableCoin,
-                amount,
-                address(this)
-            );
-            savingToken = stableCoin;
-        }
-
-        // Initialize user's child contract
-        userChildContract = UserContract(userChildContractAddress);
-        // approve child contract withdrawing token
-        uint actualSaving = BitsaveHelperLib.approveAmount(
-            userChildContractAddress,
-            amountToSave,
-            savingToken
-        );
-
-        userChildContract.createSaving(
-            nameOfSaving,
-            maturityTime,
-            startTime,
-            penaltyPercentage,
-            tokenToSave,
-            actualSaving,
-            safeMode
-        );
-    }
+    // function createSaving(
+    //     address ownerAddress,
+    //     string memory nameOfSaving,
+    //     uint256 maturityTime,
+    //     uint256 startTime,
+    //     uint8 penaltyPercentage,
+    //     // safe/risk mode
+    //     bool safeMode,
+    //     address tokenToSave,
+    //     uint amount
+    // ) internal registeredOnly(ownerAddress) {
+    //     if (block.timestamp > maturityTime)
+    //         revert BitsaveHelperLib.InvalidTime();
+    //
+    //     address savingToken = tokenToSave;
+    //     // uint amountOfWeiSent;
+    //     uint amountToSave = amount;
+    //     // user's child contract address
+    //     address payable userChildContractAddress = getUserChildContractAddress(
+    //         ownerAddress
+    //     );
+    //
+    //     // functionality for creating savings
+    //     // if (safeMode) {
+    //     //     amountToSave = crossChainSwap(
+    //     //         savingToken,
+    //     //         stableCoin,
+    //     //         amount,
+    //     //         address(this)
+    //     //     );
+    //     //     savingToken = stableCoin;
+    //     // }
+    //
+    //     // Initialize user's child contract
+    //     // userChildContract = UserContract(userChildContractAddress);
+    //     // approve child contract withdrawing token
+    //     // uint actualSaving = BitsaveHelperLib.approveAmount(
+    //     //     userChildContractAddress,
+    //     //     amountToSave,
+    //     //     savingToken
+    //     // );
+    //
+    //     // userChildContract.createSaving(
+    //     //     nameOfSaving,
+    //     //     maturityTime,
+    //     //     startTime,
+    //     //     penaltyPercentage,
+    //     //     tokenToSave,
+    //     //     actualSaving,
+    //     //     safeMode
+    //     // );
+    // }
 
   receive() external payable {}
 
