@@ -2,8 +2,9 @@
 pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./childContract.sol";
-import "./utils/bitsaveHelperLib.sol";
+import "./libraries/bitsaveHelperLib.sol";
 
 // contract NFT is ERC721 {
 //     uint256 public currentTokenId;
@@ -20,7 +21,7 @@ import "./utils/bitsaveHelperLib.sol";
 contract Bitsave {
 
   // *** Contract parameters ***
-  address public stableCoin;
+  IERC20 public stableCoin;
   address public masterAddress;
   uint256 public rewardPool;
 
@@ -31,7 +32,7 @@ contract Bitsave {
   uint256 public constant JoinLimitFee = 0.05 ether;
 
   constructor(address _stableCoin) payable {
-    stableCoin = _stableCoin;
+    stableCoin = IERC20(_stableCoin);
     masterAddress = msg.sender;
     rewardPool = 0;
   }

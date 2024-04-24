@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 library BitsaveHelperLib {
     // Constants
     uint256 public constant txnCharge = 0.02 ether;
@@ -12,6 +14,8 @@ library BitsaveHelperLib {
     error InvalidTime();
     error UserNotRegistered();
     error InvalidSaving();
+    // child contract specific
+    error CallNotFromBitsave();
 
     // Events
     event JoinedBitsave(
@@ -42,21 +46,9 @@ library BitsaveHelperLib {
         address toApproveUserAddress,
         uint256 amountToApprove,
         address targetToken
-      ) internal returns (uint256) {
-
-        (address gasZRC20, uint256 gasFee) = IZRC20(targetToken)
-          .withdrawGasFee();
-
-        gasFee = gasFee * 2;
-
-        if (gasZRC20 != targetToken) revert WrongGasContract();
-        if (gasFee >= amountToApprove) revert NotEnoughToPayGasFee();
-
-        uint256 actualSaving = amountToApprove - gasFee;
-
-        IZRC20(targetToken).approve(targetToken, gasFee);
-        IZRC20(targetToken).approve(toApproveUserAddress, actualSaving);
-        return actualSaving;
+      ) internal returns (bool) {
+        IERC20 token = IERC20(targetToken);
+        return token.approve(toApproveUserAddress, amountToApprove);
       }
 
     function transferToken(
