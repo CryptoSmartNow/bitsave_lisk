@@ -22,24 +22,27 @@ contract Bitsave {
 
   // *** Contract parameters ***
   IERC20 public stableCoin;
+  IERC20 public csToken;
   address public masterAddress;
   uint256 public rewardPool;
 
   // *** Storage ***
   mapping(address => address) addressToUserBS;
+  uint256 public userCount;
 
   // *** Constants ***
   uint256 public constant JoinLimitFee = 0.05 ether;
 
-  constructor(address _stableCoin) payable {
+  constructor(address _stableCoin, address _csToken) payable {
     stableCoin = IERC20(_stableCoin);
+    csToken = IERC20(_csToken);
     masterAddress = msg.sender;
     rewardPool = 0;
+    userCount = 0;
   }
 
   function joinBitsave(
     ) public payable returns (address) {
-        emit BitsaveHelperLib.JoinedBitsave(ownerAddress);
         if (msg.value <= JoinLimitFee)
             revert bitsaveHelperLib.AmountNotEnough();
         // deploy child contract for user
@@ -47,13 +50,9 @@ contract Bitsave {
             new ChildBitsave(msg.sender, stableCoin)
         );
         addressToUserBS[ownerAddress] = userBSAddress;
+        userCount += 1;
+        emit BitsaveHelperLib.JoinedBitsave(ownerAddress);
         return userBSAddress;
-    }
-
-  function getUserChildContractAddress(
-        address myAddress
-    ) internal view returns (address payable) {
-        return payable(addressToUserBS[myAddress]);
     }
 
     function getUserChildContractAddress() public view returns (address) {
@@ -114,6 +113,13 @@ contract Bitsave {
     }
 
   receive() external payable {}
+
+  // ---------- Private functions ---------------
+ function getUserChildContractAddress(
+        address myAddress
+    ) internal view returns (address payable) {
+        return payable(addressToUserBS[myAddress]);
+    }
 
 }
 
