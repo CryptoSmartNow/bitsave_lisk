@@ -5,10 +5,34 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./libraries/bitsaveHelperLib.sol";
 
 contract ChildBitsave {
+
   // *** Contract parameters ***
   address public bitsaveAddress;
   IERC20 public stableCoin;
   address public ownerAddress;
+
+  // *** Contract Storage ***
+
+  // structure of saving data
+  struct SavingDataStruct {
+      bool isValid;
+      uint256 amount;
+      address tokenId;
+      uint256 interestAccumulated;
+      uint256 startTime;
+      uint penaltyPercentage;
+      uint256 maturityTime;
+      bool isSafeMode;
+  }
+
+  // mapping of name of saving to individual saving
+  mapping(string => SavingDataStruct) public savings;
+  struct SavingsNamesObj {
+      string[] savingsNames;
+  }
+
+  SavingsNamesObj private savingsNamesVar;
+
 
 
   constructor(address _ownerAddress, address _stableCoin) payable {
