@@ -14,6 +14,7 @@ library BitsaveHelperLib {
     error InvalidTime();
     error UserNotRegistered();
     error InvalidSaving();
+    error CanNotWithdrawToken(string);
     // child contract specific
     error CallNotFromBitsave();
 
@@ -50,6 +51,21 @@ library BitsaveHelperLib {
         IERC20 token = IERC20(targetToken);
         return token.approve(toApproveUserAddress, amountToApprove);
       }
+
+    function retrieveToken(
+      address toApproveUserAddress, address targetToken, uint256 amountToWithdraw
+    ) internal returns (bool) {
+      // first request approval
+      require(
+        approveAmount(toApproveUserAddress, amountToWithdraw, targetToken),
+        "Token could not be withdrawn"
+      );
+      return IERC20(targetToken).transferFrom(
+        toApproveUserAddress,
+        address(this),
+        amountToWithdraw
+      );
+    }
 
     // function transferToken(
     //     address token,

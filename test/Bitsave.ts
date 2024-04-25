@@ -8,7 +8,7 @@ import hre, { ethers } from "hardhat";
 import { Constants } from "../utils/constants";
 import ERC20ABI = require('./ERC20.json');
 
-describe("Bitsave", function () {
+describe("Bitsave", function() {
   // We define a fixture to reuse the same setup in every test.
   // We use loadFixture to run this setup once, snapshot that state,
   // and reset Hardhat Network to that snapshot in every test.
@@ -29,27 +29,27 @@ describe("Bitsave", function () {
 
     const ChildBitsave = await hre.ethers.getContractFactory("ChildBitsave")
 
-    return { Bitsave, ChildBitsave, bitsave, owner, user_one};
+    return { Bitsave, ChildBitsave, bitsave, owner, user_one };
   }
 
-  describe("Deployment", function () {
-    it("Should set the required stable coin", async function () {
-      const {bitsave} = await loadFixture(deployBitsave)
+  describe("Deployment", function() {
+    it("Should set the required stable coin", async function() {
+      const { bitsave } = await loadFixture(deployBitsave)
 
       expect(await bitsave.stableCoin()).to.equal(ethers.getAddress(Constants.stableCoin));
     });
-    it("Should set the csToken and initial balance for pool", async function () {
-      const {bitsave} = await loadFixture(deployBitsave);
+    it("Should set the csToken and initial balance for pool", async function() {
+      const { bitsave } = await loadFixture(deployBitsave);
 
       expect(await bitsave.csToken()).to.equal(ethers.getAddress(Constants.csToken));
     });
     it("Should set address of master", async function() {
-      const {bitsave, owner} = await loadFixture(deployBitsave);
+      const { bitsave, owner } = await loadFixture(deployBitsave);
 
       expect(await bitsave.masterAddress()).to.equal(await owner.getAddress())
     });
     it("Should set the user count to zero", async function() {
-      const {bitsave} = await loadFixture(deployBitsave);
+      const { bitsave } = await loadFixture(deployBitsave);
 
       expect(await bitsave.userCount()).to.equal(0);
     });
@@ -77,23 +77,23 @@ describe("Bitsave", function () {
   describe("JoinBitsave", function() {
     describe("Actions", function() {
       it("Should return a valid address for user's child contract", async function() {
-        const {bitsave} = await loadFixture(deployBitsave);
-        const _ = await bitsave.joinBitsave({value: Constants.joinFee});
+        const { bitsave } = await loadFixture(deployBitsave);
+        await bitsave.joinBitsave({ value: Constants.joinFee });
         expect(await bitsave.getUserChildContractAddress()).to.be.properAddress;
       });
 
       it("Should revert with AmountNotEnough if join fee is lower than limit", async function() {
-        const {Bitsave, bitsave} = await loadFixture(deployBitsave);
-        await expect(bitsave.joinBitsave({value: 2})).to.be.revertedWithCustomError(
+        const { Bitsave, bitsave } = await loadFixture(deployBitsave);
+        await expect(bitsave.joinBitsave({ value: 2 })).to.be.revertedWithCustomError(
           Bitsave,
           "AmountNotEnough")
       });
 
       it("Should return owner address from child contract", async function() {
-        const {bitsave, ChildBitsave, owner} = await loadFixture(deployBitsave);
-        const _ = await bitsave.joinBitsave({value: Constants.joinFee});
+        const { bitsave, ChildBitsave, owner } = await loadFixture(deployBitsave);
+        await bitsave.joinBitsave({ value: Constants.joinFee });
         const childAddress = await bitsave.getUserChildContractAddress();
-        
+
         const CC = ChildBitsave.attach(childAddress);
         // @ts-ignore
         expect(await CC.ownerAddress()).to.equal(await owner.getAddress())
@@ -102,10 +102,10 @@ describe("Bitsave", function () {
 
     describe("Events", function() {
       it("Should emit event on join bitsave successfully", async function() {
-        const {bitsave, owner} = await loadFixture(deployBitsave);
-        await expect(bitsave.joinBitsave({value: Constants.joinFee}))
-        .to.emit(bitsave, "JoinedBitsave")
-        .withArgs(await owner.getAddress())
+        const { bitsave, owner } = await loadFixture(deployBitsave);
+        await expect(bitsave.joinBitsave({ value: Constants.joinFee }))
+          .to.emit(bitsave, "JoinedBitsave")
+          .withArgs(await owner.getAddress())
       })
     })
   })
