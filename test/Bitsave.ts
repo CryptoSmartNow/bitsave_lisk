@@ -27,7 +27,9 @@ describe("Bitsave", function () {
       { value: Constants.initialBalance }
     );
 
-    return { bitsave, owner, user_one};
+    const ChildBitsave = await hre.ethers.getContractFactory("ChildBitsave")
+
+    return { Bitsave, ChildBitsave, bitsave, owner, user_one};
   }
 
   describe("Deployment", function () {
@@ -52,18 +54,6 @@ describe("Bitsave", function () {
       expect(await bitsave.userCount()).to.equal(0);
     });
 
-    // it("Should set the right unlockTime", async function () {
-    //   const { lock, unlockTime } = await loadFixture(deployOneYearLockFixture);
-    //
-    //   expect(await lock.unlockTime()).to.equal(unlockTime);
-    // });
-    //
-    // it("Should set the right owner", async function () {
-    //   const { lock, owner } = await loadFixture(deployOneYearLockFixture);
-    //
-    //   expect(await lock.owner()).to.equal(owner.address);
-    // });
-    //
     // it("Should receive and store the funds to lock", async function () {
     //   const { lock, lockedAmount } = await loadFixture(
     //     deployOneYearLockFixture
@@ -83,6 +73,42 @@ describe("Bitsave", function () {
     //   );
     // });
   });
+
+  describe("JoinBitsave", function() {
+    describe("Actions", function() {
+      it("Should return a valid address for user's child contract", async function() {
+        const {bitsave} = await loadFixture(deployBitsave);
+        const _ = await bitsave.joinBitsave({value: Constants.joinFee});
+        expect(await bitsave.getUserChildContractAddress()).to.be.properAddress;
+      });
+
+      it("Should revert with AmountNotEnough if join fee is lower than limit", async function() {
+        const {Bitsave, bitsave} = await loadFixture(deployBitsave);
+        await expect(bitsave.joinBitsave({value: 2})).to.be.revertedWithCustomError(
+          Bitsave,
+          "AmountNotEnough")
+      });
+
+      it("Should return owner address from child contract", async function() {
+        const {bitsave, ChildBitsave, owner} = await loadFixture(deployBitsave);
+        const _ = await bitsave.joinBitsave({value: Constants.joinFee});
+        const childAddress = await bitsave.getUserChildContractAddress();
+        
+        const CC = ChildBitsave.attach(childAddress);
+        // @ts-ignore
+        expect(await CC.ownerAddress()).to.equal(await owner.getAddress())
+      })
+    })
+
+    describe("Events", function() {
+      it("Should emit event on join bitsave successfully", async function() {
+        const {bitsave, owner} = await loadFixture(deployBitsave);
+        await expect(bitsave.joinBitsave({value: Constants.joinFee}))
+        .to.emit(bitsave, "JoinedBitsave")
+        .withArgs(await owner.getAddress())
+      })
+    })
+  })
 
   // describe("Withdrawals", function () {
   //   describe("Validations", function () {

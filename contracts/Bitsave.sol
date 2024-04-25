@@ -51,7 +51,7 @@ contract Bitsave {
 
   function joinBitsave(
     ) public payable returns (address) {
-        if (msg.value <= JoinLimitFee)
+        if (msg.value < JoinLimitFee)
             revert BitsaveHelperLib.AmountNotEnough();
         // deploy child contract for user
         address ownerAddress = msg.sender;
