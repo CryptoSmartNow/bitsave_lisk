@@ -33,8 +33,6 @@ contract ChildBitsave {
 
   SavingsNamesObj private savingsNamesVar;
 
-
-
   constructor(address _ownerAddress, address _stableCoin) payable {
         // save bitsaveAddress first // todo: retrieve correct address
         bitsaveAddress = payable(msg.sender);
@@ -68,19 +66,29 @@ contract ChildBitsave {
         if (maturityTime < block.timestamp) revert BitsaveHelperLib.InvalidTime();
 
         // calculate interest
-        uint accumulatedInterest = 3; // todo: create interest formulae
+        uint accumulatedInterest = BitsaveHelperLib.calculateInterest(
+          amountToRetrieve
+        ); // todo: create interest formulae
+        uint256 savingsAmount = amountToRetrieve;
 
-        // if (isSafeMode) {
-        //     handleTokenRetrieving(
-        //         stableCoin,
-        //         amountToRetrieve
-        //     );
-        // }else {
-        //     handleTokenRetrieving(
-        //         tokenId,
-        //         amountToRetrieve
-        //     );
-        // }
+        if (isSafeMode) {
+            BitsaveHelperLib.retrieveToken(
+              bitsaveAddress,
+              address(stableCoin),
+              amountToRetrieve
+            );
+        }else {
+          if (tokenId != address(0)) {
+            BitsaveHelperLib.retrieveToken(
+              bitsaveAddress,
+              tokenId,
+              amountToRetrieve
+            );
+          } else {
+            // case native token
+            savingsAmount = msg.value;
+          }
+        }
 
         // store saving to map of savings
         savings[name] = SavingDataStruct({

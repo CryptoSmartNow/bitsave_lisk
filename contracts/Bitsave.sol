@@ -32,6 +32,8 @@ contract Bitsave {
 
   // *** Constants ***
   uint256 public constant JoinLimitFee = 0.05 ether;
+  uint256 public constant SavingFee = 0.001 ether;
+  uint256 public constant ChildContractGasFee = SavingFee / 20;
 
   constructor(address _stableCoin, address _csToken) payable {
     stableCoin = IERC20(_stableCoin);
@@ -78,13 +80,17 @@ contract Bitsave {
         address tokenToSave, // address 0 for native coin
         uint amount
     ) internal registeredOnly(ownerAddress) {
+
+        if (msg.value < SavingFee)
+            revert BitsaveHelperLib.NotEnoughToPayGasFee();
+
         if (block.timestamp > maturityTime)
             revert BitsaveHelperLib.InvalidTime();
 
         // address zero for native token
         address savingToken = address(0);
-        // uint amountOfWeiSent;
-        uint amountToSave = msg.value;
+        // uint amountOfWeiSent after stripping saving fee;
+        uint amountToSave = msg.value - SavingFee;
         // user's child contract address
         address payable userChildContractAddress = getUserChildContractAddress(
             ownerAddress
@@ -104,6 +110,12 @@ contract Bitsave {
           if (!tokenHasBeenWithdrawn) {
             revert BitsaveHelperLib.CanNotWithdrawToken("Txn failed");
           }
+          // let us know you've removed the savings
+          emit BitsaveHelperLib.TokenWithdrawal(
+            msg.sender,
+            address(this),
+            amountToSave
+          );
           // approve child contract withdrawing token
           bool tokenApprovedForCC = BitsaveHelperLib.approveAmount(
               userChildContractAddress,
@@ -129,7 +141,7 @@ contract Bitsave {
         // Initialize user's child contract
         ChildBitsave userChildContract = ChildBitsave(userChildContractAddress);
         
-        userChildContract.createSaving(
+        userChildContract.createSaving{value: ChildContractGasFee}(
             nameOfSaving,
             maturityTime,
             startTime,
@@ -137,6 +149,13 @@ contract Bitsave {
             tokenToSave,
             amountToSave,
             safeMode
+        );
+
+        // emit saving created 
+        emit BitsaveHelperLib.SavingCreated(
+          nameOfSaving,
+          amountToSave,
+          tokenToSave
         );
     }
 

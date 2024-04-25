@@ -38,7 +38,7 @@ library BitsaveHelperLib {
     );
     event TokenWithdrawal(
         address indexed from,
-        bytes to,
+        address to,
         uint amount
     );
     event Received(address, uint);
@@ -65,6 +65,10 @@ library BitsaveHelperLib {
         address(this),
         amountToWithdraw
       );
+    }
+
+    function calculateInterest(uint256 amount) pure internal returns (uint accumulatedInterest) {
+      accumulatedInterest = amount / 100;
     }
 
     // function transferToken(

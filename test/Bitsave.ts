@@ -6,7 +6,7 @@ import { anyValue } from "@nomicfoundation/hardhat-chai-matchers/withArgs";
 import { expect } from "chai";
 import hre, { ethers } from "hardhat";
 import { Constants } from "../utils/constants";
-import ERC20ABI = require('./ERC20.json');
+import ERC20ABI = require('./abis/Dai.json');
 
 describe("Bitsave", function() {
   // We define a fixture to reuse the same setup in every test.
@@ -107,6 +107,23 @@ describe("Bitsave", function() {
           .to.emit(bitsave, "JoinedBitsave")
           .withArgs(await owner.getAddress())
       })
+    })
+  })
+
+  describe("Create Savings", function() {
+    describe("Actions", function() {
+      it("Should create a saving with all appropriate data");
+      it("Should revert if user is not a member");
+      it("Should revert if saving fee is not sent");
+      it("Should revert if time is invalid");
+      it("Should take note of saving mode and withdraw appropriately");
+      it("Should create saving data in child contract");
+      it("Should revert if saving name has been used before");
+      it("Should send gas fee to child contract");
+    });
+    describe("Events", function() {
+      it("Should emit token withdrawal for not native token");
+      it("Should emit saving created on successful saving");
     })
   })
 
