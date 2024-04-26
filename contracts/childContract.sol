@@ -47,9 +47,22 @@ contract ChildBitsave {
       revert BitsaveHelperLib.CallNotFromBitsave();
     _;
   }
+  function addSavingName(string memory _name) private {
+    savingsNamesVar.savingsNames.push(_name);
+  }
 
+  function getSavingsNames() external view returns (SavingsNamesObj memory) {
+    return savingsNamesVar;
+  }
+
+
+  function getSaving(
+    string memory nameOfSaving
+  ) public view returns (SavingDataStruct memory) {
+      return savings[nameOfSaving];
+  }
   
-// functionality to create savings
+  // functionality to create savings
     function createSaving (
         string memory name,
         uint256 maturityTime,
@@ -92,7 +105,7 @@ contract ChildBitsave {
 
         // store saving to map of savings
         savings[name] = SavingDataStruct({
-            amount : amountToRetrieve,
+            amount : savingsAmount,
             maturityTime : maturityTime,
             interestAccumulated : accumulatedInterest,
             startTime : startTime,
@@ -103,6 +116,7 @@ contract ChildBitsave {
         });
 
         // addSavingName(name);
+        addSavingName(name);
 
         emit BitsaveHelperLib.SavingCreated(
             name,

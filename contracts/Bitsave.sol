@@ -44,10 +44,9 @@ contract Bitsave {
   }
 
   modifier registeredOnly(address sender) {
-    require(
-      addressToUserBS[sender] != address(0),
-      "User is not registered"
-    );
+    if (addressToUserBS[sender] == address(0)) {
+      revert BitsaveHelperLib.UserNotRegistered();
+    }
     _;
   }
 
@@ -71,93 +70,97 @@ contract Bitsave {
     }
 
     function createSaving(
-        address ownerAddress,
         string memory nameOfSaving,
         uint256 maturityTime,
-        uint256 startTime,
         uint8 penaltyPercentage,
         bool safeMode,
         address tokenToSave, // address 0 for native coin
-        uint amount
-    ) internal registeredOnly(ownerAddress) {
+        uint amount // discarded for native token; takes msg.value - SavingFee instead
+    ) public registeredOnly(msg.sender) payable {
 
-        if (msg.value < SavingFee)
-            revert BitsaveHelperLib.NotEnoughToPayGasFee();
+      if (msg.value < SavingFee)
+          revert BitsaveHelperLib.NotEnoughToPayGasFee();
 
-        if (block.timestamp > maturityTime)
-            revert BitsaveHelperLib.InvalidTime();
+      if (block.timestamp > maturityTime)
+          revert BitsaveHelperLib.InvalidTime();
 
-        // address zero for native token
-        address savingToken = address(0);
-        // uint amountOfWeiSent after stripping saving fee;
-        uint amountToSave = msg.value - SavingFee;
-        // user's child contract address
-        address payable userChildContractAddress = getUserChildContractAddress(
-            ownerAddress
-        );
+      // user's child contract address
+      address payable userChildContractAddress = getUserChildContractAddress(
+          msg.sender
+      );
+  
+      uint256 startTime = block.timestamp;
 
-        // check if native currency saving 
-        if (tokenToSave != address(0)) {
-          savingToken = tokenToSave;
-          amountToSave = amount;
-          // perform withdrawal respective
-          bool tokenHasBeenWithdrawn = BitsaveHelperLib
-            .retrieveToken(
-              msg.sender,
-              savingToken,
-              amountToSave
-            );
-          if (!tokenHasBeenWithdrawn) {
-            revert BitsaveHelperLib.CanNotWithdrawToken("Txn failed");
-          }
-          // let us know you've removed the savings
-          emit BitsaveHelperLib.TokenWithdrawal(
+      // check if native currency saving 
+      if (tokenToSave != address(0)) {
+        // savingToken = tokenToSave;
+        // amountToSave = amount;
+        // perform withdrawal respective
+        bool tokenHasBeenWithdrawn = BitsaveHelperLib
+          .retrieveToken(
             msg.sender,
-            address(this),
-            amountToSave
-          );
-          // approve child contract withdrawing token
-          bool tokenApprovedForCC = BitsaveHelperLib.approveAmount(
-              userChildContractAddress,
-              amountToSave,
-              savingToken
-          );
-          require(tokenApprovedForCC, "Savings invalid");
-        }
-
-        // TODO:  perform conversion for stableCoin
-        // functionality for safe mode
-        // if (safeMode) {
-        //     amountToSave = crossChainSwap(
-        //         savingToken,
-        //         stableCoin,
-        //         amount,
-        //         address(this)
-        //     );
-        //     savingToken = stableCoin;
-        // }
-
-        /// send savings request to child contract with a little gas 
-        // Initialize user's child contract
-        ChildBitsave userChildContract = ChildBitsave(userChildContractAddress);
-        
-        userChildContract.createSaving{value: ChildContractGasFee}(
-            nameOfSaving,
-            maturityTime,
-            startTime,
-            penaltyPercentage,
             tokenToSave,
-            amountToSave,
-            safeMode
+            amount
+          );
+        if (!tokenHasBeenWithdrawn) {
+          revert BitsaveHelperLib.CanNotWithdrawToken("Txn failed");
+        }
+        // let us know you've removed the savings
+        emit BitsaveHelperLib.TokenWithdrawal(
+          msg.sender,
+          address(this),
+          amount
         );
+        // approve child contract withdrawing token
+        require(
+          BitsaveHelperLib.approveAmount(
+            userChildContractAddress,
+            amount,
+            tokenToSave
+          ),
+          "Savings invalid"
+        );
+      } else {
+        amount = msg.value - SavingFee;
+      }
 
-        // emit saving created 
-        emit BitsaveHelperLib.SavingCreated(
+      // TODO:  perform conversion for stableCoin
+      // functionality for safe mode
+      // if (safeMode) {
+      //     amountToSave = crossChainSwap(
+      //         savingToken,
+      //         stableCoin,
+      //         amount,
+      //         address(this)
+      //     );
+      //     savingToken = stableCoin;
+      // }
+
+      /// send savings request to child contract with a little gas 
+      // Initialize user's child contract
+      ChildBitsave userChildContract = ChildBitsave(userChildContractAddress);
+      
+      uint256 amountToSend = tokenToSave == address(0) ? 
+        ChildContractGasFee + amount
+        :
+        ChildContractGasFee;
+      userChildContract.createSaving{value: amountToSend}(
           nameOfSaving,
-          amountToSave,
-          tokenToSave
-        );
-    }
+          maturityTime,
+          startTime,
+          penaltyPercentage,
+          tokenToSave,
+          amount,
+          safeMode
+      );
+
+      // emit saving created 
+      emit BitsaveHelperLib.SavingCreated(
+        nameOfSaving,
+        amount,
+        tokenToSave
+      );
+  }
 
   receive() external payable {}
 

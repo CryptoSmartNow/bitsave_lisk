@@ -7,6 +7,7 @@ import { expect } from "chai";
 import hre, { ethers } from "hardhat";
 import { Constants } from "../utils/constants";
 import ERC20ABI = require('./abis/Dai.json');
+import { childContractGenerate } from "../utils/generator";
 
 describe("Bitsave", function() {
   // We define a fixture to reuse the same setup in every test.
@@ -18,7 +19,7 @@ describe("Bitsave", function() {
     const ONE_GWEI = 1_000_000_000;
 
     // Contracts are deployed using the first signer/account by default
-    const [owner, user_one] = await hre.ethers.getSigners();
+    const [owner, user_one, optedUser] = await hre.ethers.getSigners();
 
     const Bitsave = await hre.ethers.getContractFactory("Bitsave");
     const bitsave = await Bitsave.deploy(
@@ -27,9 +28,15 @@ describe("Bitsave", function() {
       { value: Constants.initialBalance }
     );
 
+    // Create an opted user for tests that need one
+    await bitsave.connect(optedUser).joinBitsave({ value: Constants.joinFee });
+
+    // Connect back to owner
+    bitsave.connect(owner);
+
     const ChildBitsave = await hre.ethers.getContractFactory("ChildBitsave")
 
-    return { Bitsave, ChildBitsave, bitsave, owner, user_one };
+    return { Bitsave, ChildBitsave, bitsave, owner, user_one, optedUser };
   }
 
   describe("Deployment", function() {
@@ -48,10 +55,10 @@ describe("Bitsave", function() {
 
       expect(await bitsave.masterAddress()).to.equal(await owner.getAddress())
     });
-    it("Should set the user count to zero", async function() {
+    it("Should set the user count to one since we have a default user", async function() {
       const { bitsave } = await loadFixture(deployBitsave);
 
-      expect(await bitsave.userCount()).to.equal(0);
+      expect(await bitsave.userCount()).to.equal(1);
     });
 
     // it("Should receive and store the funds to lock", async function () {
@@ -111,15 +118,149 @@ describe("Bitsave", function() {
   })
 
   describe("Create Savings", function() {
+
+    const savingData = {
+      name: "Hospital Fee",
+      maturityTime: Math.round(Date.now() / 1000 + 3000).toString(),
+      penaltyPercentage: ethers.toBigInt(1),
+    }
+
     describe("Actions", function() {
-      it("Should create a saving with all appropriate data");
-      it("Should revert if user is not a member");
-      it("Should revert if saving fee is not sent");
-      it("Should revert if time is invalid");
+      it("Should revert if user is not a member", async function() {
+        const { bitsave } = await loadFixture(deployBitsave)
+        await expect(bitsave.createSaving(
+          savingData.name,
+          savingData.maturityTime,
+          savingData.penaltyPercentage,
+          false,
+          ethers.ZeroAddress,
+          ethers.parseEther("0.5"),
+          { value: ethers.parseEther("0.5") }
+        )).to.be.revertedWithCustomError(bitsave, "UserNotRegistered")
+      });
+
+      it("Should create a saving with all appropriate data", async function() {
+        const { bitsave, optedUser } = await loadFixture(deployBitsave);
+        const optedUserBalanceBefore = await ethers.provider.getBalance(optedUser);
+        console.log(optedUserBalanceBefore)
+        await (
+          bitsave.connect(optedUser)
+            .createSaving(
+              savingData.name,
+              savingData.maturityTime,
+              savingData.penaltyPercentage,
+              false,
+              ethers.ZeroAddress,
+              ethers.parseEther("0.1"),
+              { value: Constants.savingFee }
+            )
+        );
+        const userChildContractAddress = await bitsave
+          .connect(optedUser).getUserChildContractAddress();
+        console.log("uaddr", userChildContractAddress)
+        const { userChildContract } = await childContractGenerate(userChildContractAddress);
+
+        // @ts-ignore
+        const hospitalSaving = await userChildContract
+          .connect(optedUser)
+          .getSaving(savingData.name);
+
+        expect(hospitalSaving.isValid).to.be.true;
+        expect(hospitalSaving.amount).to.not.equal(0);
+        expect(hospitalSaving.tokenId).to.equal(ethers.ZeroAddress);
+        expect(hospitalSaving.maturityTime).to.equal(savingData.maturityTime)
+
+      });
+
+      it("Should revert if saving fee is not sent", async function() {
+        const { bitsave, optedUser } = await loadFixture(deployBitsave);
+        await expect(
+          bitsave.connect(optedUser)
+            .createSaving(
+              savingData.name,
+              savingData.maturityTime,
+              savingData.penaltyPercentage,
+              false,
+              ethers.ZeroAddress,
+              ethers.parseEther("0.1"),
+            )
+        ).to
+          .be.revertedWithCustomError(bitsave, "NotEnoughToPayGasFee")
+      });
+
+      it("Should revert if time is invalid", async function() {
+        const { bitsave, optedUser } = await loadFixture(deployBitsave);
+        await expect(
+          bitsave.connect(optedUser)
+            .createSaving(
+              savingData.name,
+              Math.round(Date.now() / 1000 - 3000).toString(),
+              savingData.penaltyPercentage,
+              false,
+              ethers.ZeroAddress,
+              ethers.parseEther("0.1"),
+              { value: Constants.savingFee }
+            )
+        ).to
+          .be.revertedWithCustomError(bitsave, "InvalidTime")
+      });
+
       it("Should take note of saving mode and withdraw appropriately");
-      it("Should create saving data in child contract");
-      it("Should revert if saving name has been used before");
-      it("Should send gas fee to child contract");
+      it("Should revert if saving name has been used before", async function() {
+        const { bitsave, optedUser, ChildBitsave } = await loadFixture(deployBitsave);
+        await (
+          bitsave.connect(optedUser)
+            .createSaving(
+              savingData.name,
+              savingData.maturityTime,
+              savingData.penaltyPercentage,
+              false,
+              ethers.ZeroAddress,
+              ethers.parseEther("0.1"),
+              { value: Constants.savingFee }
+            )
+        );
+
+        await expect(
+          bitsave.connect(optedUser)
+            .createSaving(
+              savingData.name,
+              savingData.maturityTime,
+              savingData.penaltyPercentage,
+              false,
+              ethers.ZeroAddress,
+              ethers.parseEther("0.1"),
+              { value: Constants.savingFee }
+            )
+        ).to
+          .be.revertedWithCustomError(ChildBitsave, "InvalidSaving")
+
+      });
+
+      it("Should send gas fee to child contract", async function() {
+        const { bitsave, optedUser, ChildBitsave } = await loadFixture(deployBitsave);
+
+        const userChildContractAddress = await bitsave.getUserChildContractAddress();
+
+        const initialBalance = await ethers.provider.getBalance(userChildContractAddress);
+        await (
+          bitsave.connect(optedUser)
+            .createSaving(
+              savingData.name,
+              savingData.maturityTime,
+              savingData.penaltyPercentage,
+              false,
+              ethers.ZeroAddress,
+              ethers.parseEther("0.1"),
+              { value: Constants.savingFee }
+            )
+        );
+        expect(
+          initialBalance
+        ).to.be.lessThan(
+          ethers.provider.getBalance(userChildContractAddress)
+        )
+      });
     });
     describe("Events", function() {
       it("Should emit token withdrawal for not native token");
