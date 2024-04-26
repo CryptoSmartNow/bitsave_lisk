@@ -123,6 +123,7 @@ describe("Bitsave", function() {
       name: "Hospital Fee",
       maturityTime: Math.round(Date.now() / 1000 + 3000).toString(),
       penaltyPercentage: ethers.toBigInt(1),
+      amountEth: ethers.parseEther("0.1"),
     }
 
     describe("Actions", function() {
@@ -198,7 +199,7 @@ describe("Bitsave", function() {
               savingData.penaltyPercentage,
               false,
               ethers.ZeroAddress,
-              ethers.parseEther("0.1"),
+              savingData.amountEth,
               { value: Constants.savingFee }
             )
         ).to
@@ -238,9 +239,10 @@ describe("Bitsave", function() {
       });
 
       it("Should send gas fee to child contract", async function() {
-        const { bitsave, optedUser, ChildBitsave } = await loadFixture(deployBitsave);
+        const { bitsave, optedUser } = await loadFixture(deployBitsave);
 
-        const userChildContractAddress = await bitsave.getUserChildContractAddress();
+        const userChildContractAddress = await bitsave
+          .connect(optedUser).getUserChildContractAddress();
 
         const initialBalance = await ethers.provider.getBalance(userChildContractAddress);
         await (
@@ -251,20 +253,39 @@ describe("Bitsave", function() {
               savingData.penaltyPercentage,
               false,
               ethers.ZeroAddress,
-              ethers.parseEther("0.1"),
-              { value: Constants.savingFee }
+              savingData.amountEth,
+              { value: Constants.savingFee + savingData.amountEth }
             )
         );
-        expect(
-          initialBalance
-        ).to.be.lessThan(
-          ethers.provider.getBalance(userChildContractAddress)
-        )
+        const finalBalance = await ethers.provider.getBalance(userChildContractAddress);
+
+        expect((finalBalance - initialBalance).valueOf())
+          .to.be.greaterThan(Constants.savingFee.valueOf())
       });
     });
     describe("Events", function() {
       it("Should emit token withdrawal for not native token");
-      it("Should emit saving created on successful saving");
+      it("Should emit saving created on successful saving", async function() {
+        const { bitsave, optedUser } = await loadFixture(deployBitsave);
+        await expect(
+          bitsave.connect(optedUser)
+            .createSaving(
+              savingData.name,
+              savingData.maturityTime,
+              savingData.penaltyPercentage,
+              false,
+              ethers.ZeroAddress,
+              savingData.amountEth,
+              { value: Constants.savingFee + savingData.amountEth }
+            )
+        ).to.emit(bitsave, "SavingCreated")
+          .withArgs(
+            savingData.name,
+            savingData.amountEth,
+            ethers.ZeroAddress
+          );
+
+      });
     })
   })
 

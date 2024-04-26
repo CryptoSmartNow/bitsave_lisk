@@ -140,11 +140,10 @@ contract Bitsave {
       // Initialize user's child contract
       ChildBitsave userChildContract = ChildBitsave(userChildContractAddress);
       
-      uint256 amountToSend = tokenToSave == address(0) ? 
-        ChildContractGasFee + amount
-        :
-        ChildContractGasFee;
-      userChildContract.createSaving{value: amountToSend}(
+      userChildContract.createSaving{
+        value: tokenToSave == address(0) ? 
+          ChildContractGasFee + amount : ChildContractGasFee
+      }(
           nameOfSaving,
           maturityTime,
           startTime,
