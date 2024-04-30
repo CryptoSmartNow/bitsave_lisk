@@ -161,6 +161,65 @@ contract Bitsave {
       );
   }
 
+  ///
+    /// INCREMENT SAVING
+    ///    the amount to add to saving
+    ///
+    ///    string nameOfSaving
+    ///
+    function incrementSaving(
+        address ownerAddress,
+        string memory nameOfSavings,
+        address tokenToRetrieve,
+        uint256 amount
+    ) internal registeredOnly(ownerAddress) {
+        // initialize userChildContract
+        address payable userChildContractAddress = payable(
+            addressToUserBS[ownerAddress]
+        );
+      ChildBitsave userChildContract = ChildBitsave(userChildContractAddress);
+        // todo: perform amount conversion and everything
+        uint savingPlusAmount = amount;
+        // todo: check savings detail by reading the storage of userChildContract
+        // bool isSafeMode = userChildContract.getSavingMode(nameOfSavings);
+        // if (isSafeMode) {
+        //     savingPlusAmount = crossChainSwap(
+        //         userChildContract.getSavingTokenId(nameOfSavings),
+        //         stableCoin,
+        //         savingPlusAmount,
+        //         address(this)
+        //     );
+        //     tokenToRetrieve = stableCoin;
+        // }
+        // call withdrawSavings
+        // approve child contract withdrawing token
+        require(
+          BitsaveHelperLib.approveAmount(
+            userChildContractAddress,
+            amount,
+            tokenToRetrieve
+          ),
+          "Savings invalid"
+        );
+
+        userChildContract.incrementSaving(nameOfSavings, amount);
+    }
+
+/// WITHDRAW savings
+    ///
+    ///    string nameOfSaving
+    ///
+    function withdrawSaving(
+        address ownerAddress,
+        string memory nameOfSavings
+    ) public registeredOnly(ownerAddress) returns (bool) {
+        // initialize user's child userChildContract
+        ChildBitsave userChildContract = ChildBitsave(payable(addressToUserBS[msg.sender]));
+        // call withdraw savings fn
+        userChildContract.withdrawSaving(nameOfSavings);
+        return true;
+    }
+
   receive() external payable {}
 
   // ---------- Private functions ---------------

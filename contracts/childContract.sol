@@ -3,11 +3,12 @@ pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./libraries/bitsaveHelperLib.sol";
+import "./Bitsave.sol";
 
 contract ChildBitsave {
 
   // *** Contract parameters ***
-  address public bitsaveAddress;
+  address payable public bitsaveAddress;
   IERC20 public stableCoin;
   address public ownerAddress;
 
@@ -61,6 +62,25 @@ contract ChildBitsave {
   ) public view returns (SavingDataStruct memory) {
       return savings[nameOfSaving];
   }
+
+
+function sendAsOriginalToken(
+        address originalToken,
+        uint amount,
+        address ownerAddress
+    ) public payable {
+        // check amount sent
+        // if (amount < poolFee) revert BitsaveHelperLib.AmountNotEnough();
+        // retrieve stable coin used from owner address
+        BitsaveHelperLib.retrieveToken(ownerAddress, address(stableCoin), amount);
+        // convert to original token using crossChainSwap()
+        // crossChainSwap(
+        //     stableCoin,
+        //     originalToken,
+        //     amount,
+        //     ownerAddress // send to owner address directly
+        // );
+    }
   
   // functionality to create savings
     function createSaving (
@@ -125,6 +145,101 @@ contract ChildBitsave {
         );
 
         return 1;
+    }
+
+    // functionality to add to savings
+    function incrementSaving (
+      string memory name,
+      uint256 savingPlusAmount
+    ) public payable bitsaveOnly returns (uint) {
+        SavingDataStruct storage toFundSavings = savings[name];
+        if (!toFundSavings.isValid) revert BitsaveHelperLib.InvalidSaving();
+        if (block.timestamp > toFundSavings.maturityTime) revert BitsaveHelperLib.InvalidTime();
+
+        // handle retrieving token from contract
+        if (toFundSavings.isSafeMode) {
+            BitsaveHelperLib.retrieveToken(
+              bitsaveAddress,
+                address(stableCoin),
+                savingPlusAmount
+            );
+        }else {
+            BitsaveHelperLib.retrieveToken(
+              bitsaveAddress,
+                toFundSavings.tokenId,
+                savingPlusAmount
+            );
+        }
+
+        // calculate new interest
+        uint recalculatedInterest = 1;
+        toFundSavings.interestAccumulated = toFundSavings.interestAccumulated + recalculatedInterest;
+        toFundSavings.amount = toFundSavings.amount + savingPlusAmount;
+
+        // save new savings data
+        savings[name] = toFundSavings;
+
+        emit BitsaveHelperLib.SavingIncremented(
+            name,
+            savingPlusAmount,
+            toFundSavings.amount,
+            toFundSavings.tokenId
+        );
+
+        return toFundSavings.interestAccumulated;
+    }
+
+function withdrawSaving (string memory name) public payable bitsaveOnly returns (string memory) {
+        SavingDataStruct storage toWithdrawSavings = savings[name];
+        // check if saving exit
+        if (!toWithdrawSavings.isValid) revert BitsaveHelperLib.InvalidSaving();
+        uint amountToWithdraw;
+        Bitsave bitsave = Bitsave(bitsaveAddress);
+        // check if saving is mature
+        if (block.timestamp < toWithdrawSavings.maturityTime) {
+            // remove penalty from savings
+            amountToWithdraw = (toWithdrawSavings.amount * (100 - toWithdrawSavings.penaltyPercentage)) / 100;
+        }else {
+          // TODO: handle interest point management
+            // bitsave.handleUsersInterest(
+            //     name,
+            //     address(this),
+            //     ownerAddress
+            // );
+        }
+
+        // send the savings amount to withdraw
+        address tokenId = toWithdrawSavings.tokenId;
+        // function can be abstracted for sending token out
+        if (toWithdrawSavings.isSafeMode) {
+            // approve withdrawal from parent contract
+            BitsaveHelperLib.approveAmount(
+              bitsaveAddress,
+              amountToWithdraw,
+              address(stableCoin)
+            );
+            // call parent for conversion
+            bitsave
+                .sendAsOriginalToken(
+                    tokenId,
+                    amountToWithdraw,
+                    ownerAddress
+                );
+        }else {
+            BitsaveHelperLib.transferToken(
+                toWithdrawSavings.tokenId,
+                ownerAddress,
+                amountToWithdraw
+            );
+        }
+        // Delete savings; ensure saving is deleted/made invalid
+        savings[name].isValid = false;
+
+        emit BitsaveHelperLib.SavingWithdrawn(
+            name
+        );
+
+        return "savings withdrawn successfully";
     }
 }
 
