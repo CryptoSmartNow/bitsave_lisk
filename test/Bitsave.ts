@@ -289,6 +289,72 @@ describe("Bitsave", function() {
     })
   })
 
+  describe("Increment savings", function() {
+    const savingData = {
+      name: "Hospital Fee",
+      maturityTime: Math.round(Date.now() / 1000 + 3000).toString(),
+      penaltyPercentage: ethers.toBigInt(1),
+      amountEth: ethers.parseEther("0.1"),
+    }
+
+    describe("Actions", function() {
+      it("Should increment savings value", async function() {
+        const { bitsave, optedUser, } = await loadFixture(deployBitsave);
+
+        const userChildContractAddress = await bitsave
+          .connect(optedUser).getUserChildContractAddress();
+
+        await (
+          bitsave.connect(optedUser)
+            .createSaving(
+              savingData.name,
+              savingData.maturityTime,
+              savingData.penaltyPercentage,
+              false,
+              ethers.ZeroAddress,
+              ethers.parseEther("0.1"),
+              { value: Constants.savingFee }
+            )
+        );
+
+        const walletInitialBalance =
+          await ethers.provider.getBalance(userChildContractAddress);
+
+        await (
+        bitsave.connect(optedUser).incrementSaving(
+            savingData.name,
+            ethers.ZeroAddress,
+            savingData.amountEth
+          )
+        )
+
+      });
+      it("Should revert on invalid savings");
+    })
+
+    describe("Events", function() {
+
+    })
+  })
+
+  describe("Withdraw savings", function() {
+    describe("Actions", function() {
+      it("Should withdraw savings back", async function() {
+        const { bitsave, optedUser } = await loadFixture(deployBitsave);
+        const myBalance = await ethers.provider.getBalance(optedUser);
+
+      });
+      it("Should revert on invalid savings withdrawal");
+      // TODO:
+      it("Should clean up funds on child contract");
+    })
+
+    describe("Events", function() {
+
+    })
+  })
+
+
   // describe("Withdrawals", function () {
   //   describe("Validations", function () {
   //     it("Should revert with the right error if called too soon", async function () {

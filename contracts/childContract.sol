@@ -52,6 +52,20 @@ contract ChildBitsave {
     savingsNamesVar.savingsNames.push(_name);
   }
 
+
+  // Contract Getters
+  function getSavingMode(string memory nameOfSaving) view external returns (bool) {
+        return savings[nameOfSaving].isSafeMode;
+  }
+
+  function getSavingInterest(string memory nameOfSaving) view external returns (uint256) {
+        return savings[nameOfSaving].interestAccumulated;
+  }
+
+  function getSavingTokenId(string memory nameOfSaving) view external returns (address) {
+        return savings[nameOfSaving].tokenId;
+  }
+
   function getSavingsNames() external view returns (SavingsNamesObj memory) {
     return savingsNamesVar;
   }
@@ -160,6 +174,8 @@ contract ChildBitsave {
         if (!toFundSavings.isValid) revert BitsaveHelperLib.InvalidSaving();
         if (block.timestamp > toFundSavings.maturityTime) revert BitsaveHelperLib.InvalidTime();
 
+        bool isNativeToken = toFundSavings.tokenId == address(0);
+
         // handle retrieving token from contract
         if (toFundSavings.isSafeMode) {
             BitsaveHelperLib.retrieveToken(
@@ -173,6 +189,10 @@ contract ChildBitsave {
                 toFundSavings.tokenId,
                 savingPlusAmount
             );
+        }
+
+        if (isNativeToken) {
+          require(msg.value >= savingPlusAmount, "Invalid saving increment value sent");
         }
 
         // calculate new interest

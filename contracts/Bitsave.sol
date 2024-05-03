@@ -206,41 +206,48 @@ contract Bitsave {
     ///    string nameOfSaving
     ///
     function incrementSaving(
-        address ownerAddress,
         string memory nameOfSavings,
         address tokenToRetrieve,
         uint256 amount
-    ) internal registeredOnly(ownerAddress) {
+    ) public payable registeredOnly(msg.sender) {
         // initialize userChildContract
         address payable userChildContractAddress = payable(
-            addressToUserBS[ownerAddress]
+            addressToUserBS[msg.sender]
         );
       ChildBitsave userChildContract = ChildBitsave(userChildContractAddress);
+      address savingToken = userChildContractAddress.getSavingTokenId(nameOfSavings);
+      bool isNativeToken = savingToken == address(0);
         // todo: perform amount conversion and everything
         uint savingPlusAmount = amount;
         // todo: check savings detail by reading the storage of userChildContract
-        // bool isSafeMode = userChildContract.getSavingMode(nameOfSavings);
-        // if (isSafeMode) {
-        //     savingPlusAmount = crossChainSwap(
-        //         userChildContract.getSavingTokenId(nameOfSavings),
-        //         stableCoin,
-        //         savingPlusAmount,
-        //         address(this)
-        //     );
-        //     tokenToRetrieve = stableCoin;
-        // }
-        // call withdrawSavings
-        // approve child contract withdrawing token
-        require(
-          BitsaveHelperLib.approveAmount(
-            userChildContractAddress,
-            amount,
-            tokenToRetrieve
-          ),
-          "Savings invalid"
-        );
+        bool isSafeMode = userChildContract.getSavingMode(nameOfSavings);
+        if (isSafeMode) {
+            // savingPlusAmount = crossChainSwap(
+            //     userChildContract.getSavingTokenId(nameOfSavings),
+            //     stableCoin,
+            //     savingPlusAmount,
+            //     address(this)
+            // );
+            tokenToRetrieve = address(stableCoin);
 
-        userChildContract.incrementSaving(nameOfSavings, amount);
+        }
+        if (!isNativeToken) {
+          // approve child contract withdrawing token
+          require(
+            BitsaveHelperLib.approveAmount(
+              userChildContractAddress,
+              amount,
+              tokenToRetrieve
+            ),
+            "Savings invalid"
+          );
+        }
+        // call withdrawSavings
+        
+        userChildContract.incrementSaving{
+          value: !isNativeToken ? 
+          ChildContractGasFee + amount : ChildContractGasFee
+        }(nameOfSavings, amount);
     }
 
 /// WITHDRAW savings
