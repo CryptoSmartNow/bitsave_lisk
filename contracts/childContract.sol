@@ -63,24 +63,26 @@ contract ChildBitsave {
       return savings[nameOfSaving];
   }
 
+  // TODO: Funds cleanup functionalities
 
-function sendAsOriginalToken(
-        address originalToken,
-        uint amount,
-        address ownerAddress
-    ) public payable {
-        // check amount sent
-        // if (amount < poolFee) revert BitsaveHelperLib.AmountNotEnough();
-        // retrieve stable coin used from owner address
-        BitsaveHelperLib.retrieveToken(ownerAddress, address(stableCoin), amount);
-        // convert to original token using crossChainSwap()
-        // crossChainSwap(
-        //     stableCoin,
-        //     originalToken,
-        //     amount,
-        //     ownerAddress // send to owner address directly
-        // );
-    }
+
+// function sendAsOriginalToken(
+//         address originalToken,
+//         uint amount,
+//         address ownerAddress
+//     ) public payable {
+//         // check amount sent
+//         // if (amount < poolFee) revert BitsaveHelperLib.AmountNotEnough();
+//         // retrieve stable coin used from owner address
+//         BitsaveHelperLib.retrieveToken(ownerAddress, address(stableCoin), amount);
+//         // convert to original token using crossChainSwap()
+//         // crossChainSwap(
+//         //     stableCoin,
+//         //     originalToken,
+//         //     amount,
+//         //     ownerAddress // send to owner address directly
+//         // );
+//     }
   
   // functionality to create savings
     function createSaving (
@@ -174,7 +176,9 @@ function sendAsOriginalToken(
         }
 
         // calculate new interest
-        uint recalculatedInterest = 1;
+        uint recalculatedInterest = BitsaveHelperLib.calculateInterest(
+          savingPlusAmount
+        );
         toFundSavings.interestAccumulated = toFundSavings.interestAccumulated + recalculatedInterest;
         toFundSavings.amount = toFundSavings.amount + savingPlusAmount;
 
@@ -200,7 +204,9 @@ function withdrawSaving (string memory name) public payable bitsaveOnly returns 
         // check if saving is mature
         if (block.timestamp < toWithdrawSavings.maturityTime) {
             // remove penalty from savings
-            amountToWithdraw = (toWithdrawSavings.amount * (100 - toWithdrawSavings.penaltyPercentage)) / 100;
+            amountToWithdraw = (
+              toWithdrawSavings.amount * (100 - toWithdrawSavings.penaltyPercentage)
+            ) / 100;
         }else {
           // TODO: handle interest point management
             // bitsave.handleUsersInterest(
@@ -228,11 +234,18 @@ function withdrawSaving (string memory name) public payable bitsaveOnly returns 
                     ownerAddress
                 );
         }else {
+          if (tokenId == address(0)) {
+            (bool sent, bytes memory data) =
+              ownerAddress.call{value: amountToWithdraw}("");
+            require(sent, "Couldn't send funds");
+          } else {
             BitsaveHelperLib.transferToken(
                 toWithdrawSavings.tokenId,
                 ownerAddress,
                 amountToWithdraw
             );
+
+          }
         }
         // Delete savings; ensure saving is deleted/made invalid
         savings[name].isValid = false;

@@ -50,6 +50,18 @@ contract Bitsave {
     _;
   }
 
+  modifier fromABitsaveChildOnly(address childOwnerAddress) {
+    address fetchedChildAddress = addressToUserBS[childOwnerAddress];
+    if (
+      fetchedChildAddress == address(0) // checks that the child contract exists
+      || // could be merged into one check but for readability
+      fetchedChildAddress != msg.sender // and that the child contract sent the request
+    ) {
+      revert BitsaveHelperLib.CallNotFromBitsave();
+    }
+    _;
+  }
+
   function joinBitsave(
     ) public payable returns (address) {
         if (msg.value < JoinLimitFee)
@@ -69,6 +81,27 @@ contract Bitsave {
         return addressToUserBS[msg.sender];
     }
 
+    function sendAsOriginalToken(
+        address originalToken,
+        uint amount,
+        address ownerAddress
+    ) public payable fromABitsaveChildOnly(ownerAddress) {
+        // check amount sent
+        // if (amount < poolFee) revert BitsaveHelperLib.AmountNotEnough();
+        // retrieve stable coin used from owner address
+        BitsaveHelperLib.retrieveToken(
+          msg.sender,
+          address(stableCoin), amount
+        );
+        // convert to original token using crossChainSwap()
+        // crossChainSwap(
+        //     stableCoin,
+        //     originalToken,
+        //     amount,
+        //     ownerAddress // send to owner address directly
+        // );
+    }
+
     function createSaving(
         string memory nameOfSaving,
         uint256 maturityTime,
@@ -83,6 +116,11 @@ contract Bitsave {
 
       if (block.timestamp > maturityTime)
           revert BitsaveHelperLib.InvalidTime();
+
+      // NOTE: For now, no safeMode since no swap contract
+      if (safeMode) {
+        revert BitsaveHelperLib.NotSupported("No safe mode yet!"); 
+      }
 
       // user's child contract address
       address payable userChildContractAddress = getUserChildContractAddress(
