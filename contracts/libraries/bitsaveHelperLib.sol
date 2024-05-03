@@ -67,6 +67,7 @@ library BitsaveHelperLib {
       );
     }
 
+    // TODO: integrate bitsave interest calculator
     function calculateInterest(uint256 amount) pure internal returns (uint accumulatedInterest) {
       accumulatedInterest = amount / 100;
     }

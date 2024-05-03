@@ -152,6 +152,8 @@ function sendAsOriginalToken(
       string memory name,
       uint256 savingPlusAmount
     ) public payable bitsaveOnly returns (uint) {
+
+        // fetch savings data
         SavingDataStruct storage toFundSavings = savings[name];
         if (!toFundSavings.isValid) revert BitsaveHelperLib.InvalidSaving();
         if (block.timestamp > toFundSavings.maturityTime) revert BitsaveHelperLib.InvalidTime();
