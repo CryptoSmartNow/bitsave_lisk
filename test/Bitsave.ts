@@ -305,11 +305,6 @@ describe("Bitsave", function() {
         const userChildContractAddress = await bitsave
           .connect(optedUser).getUserChildContractAddress();
 
-      const c1 =
-          await ethers.provider.getBalance(userChildContractAddress);
-
-        console.log("c1", c1)
-
         await (
           bitsave.connect(optedUser)
             .createSaving(
@@ -326,21 +321,17 @@ describe("Bitsave", function() {
         const contractInitialBalance =
           await ethers.provider.getBalance(userChildContractAddress);
 
-        console.log("c2", contractInitialBalance)
-
         await (
           bitsave.connect(optedUser).incrementSaving(
             savingData.name,
             ethers.ZeroAddress,
             ethers.parseEther("0"),
-            {value: savingData.incrementValue}
+            { value: savingData.incrementValue }
           )
         )
 
-        const contractFinalBalance = 
+        const contractFinalBalance =
           await ethers.provider.getBalance(userChildContractAddress);
-
-        console.log("c3", contractFinalBalance)
 
         expect(contractFinalBalance - contractInitialBalance)
           .greaterThanOrEqual(savingData.incrementValue)
@@ -355,10 +346,44 @@ describe("Bitsave", function() {
   })
 
   describe("Withdraw savings", function() {
+    const savingData = {
+      name: "Hospital Fee",
+      maturityTime: Math.round(Date.now() / 1000 + 3000).toString(),
+      penaltyPercentage: ethers.toBigInt(1),
+      amountEth: ethers.parseEther("0.1"),
+      incrementValue: ethers.parseEther("0.06")
+    }
+
     describe("Actions", function() {
       it("Should withdraw savings back", async function() {
         const { bitsave, optedUser } = await loadFixture(deployBitsave);
-        const myBalance = await ethers.provider.getBalance(optedUser);
+        const myInitialBalance = await ethers.provider.getBalance(optedUser);
+
+        await (
+          bitsave.connect(optedUser)
+            .createSaving(
+              savingData.name,
+              savingData.maturityTime,
+              savingData.penaltyPercentage,
+              false,
+              ethers.ZeroAddress,
+              savingData.amountEth,
+              { value: savingData.amountEth }
+            )
+        );
+
+        const myBalanceAfterSaving = await ethers.provider.getBalance(optedUser);
+
+        // escape time percentage penalty
+        time.increaseTo(Date.now() + 1000)
+
+        await (bitsave.connect(optedUser).withdrawSaving(savingData.name));
+
+        const myFinalBalance = await ethers.provider.getBalance(optedUser);
+
+        expect(myFinalBalance - myBalanceAfterSaving).greaterThanOrEqual(
+          savingData.amountEth - Constants.savingFee - ethers.parseEther("0.002") 
+        );
 
       });
       it("Should revert on invalid savings withdrawal");

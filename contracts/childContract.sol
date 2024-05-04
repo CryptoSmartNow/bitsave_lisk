@@ -222,7 +222,7 @@ function withdrawSaving (string memory name) public payable bitsaveOnly returns 
         SavingDataStruct storage toWithdrawSavings = savings[name];
         // check if saving exit
         if (!toWithdrawSavings.isValid) revert BitsaveHelperLib.InvalidSaving();
-        uint amountToWithdraw;
+        uint amountToWithdraw = toWithdrawSavings.amount;
         Bitsave bitsave = Bitsave(bitsaveAddress);
         // check if saving is mature
         if (block.timestamp < toWithdrawSavings.maturityTime) {

@@ -258,9 +258,8 @@ contract Bitsave {
     ///    string nameOfSaving
     ///
     function withdrawSaving(
-        address ownerAddress,
         string memory nameOfSavings
-    ) public registeredOnly(ownerAddress) returns (bool) {
+    ) public registeredOnly(msg.sender) returns (bool) {
         // initialize user's child userChildContract
         ChildBitsave userChildContract = ChildBitsave(payable(addressToUserBS[msg.sender]));
         // call withdraw savings fn
