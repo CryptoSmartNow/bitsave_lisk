@@ -1,11 +1,24 @@
 import { ethers } from 'hardhat';
+import { Constants } from '../utils/constants';
 
 async function main() {
-  const bitsave = await ethers.deployContract('Bitsave');
+  const Bitsave = await ethers.getContractFactory('Bitsave');
+  const deployer = await ethers.getSigner(Constants.masterAddress);
 
-  await bitsave.waitForDeployment();
+  console.log(
+    "Signer balance", 
+    await deployer.getAddress(), 
+    await ethers.provider.getBalance(deployer)
+  );
 
-  console.log('Bitsave Contract Deployed at ' + bitsave.target);
+  const bitsave = await Bitsave.deploy(
+    Constants.stableCoin,
+    Constants.csToken,
+    {value: Constants.initialBalance}
+  )
+
+  console.log('Bitsave Contract Deployed at ' + await bitsave.getAddress());
+  console.log(bitsave);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

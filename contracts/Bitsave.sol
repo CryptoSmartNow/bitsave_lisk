@@ -31,8 +31,8 @@ contract Bitsave {
   uint256 public userCount;
 
   // *** Constants ***
-  uint256 public constant JoinLimitFee = 0.05 ether;
-  uint256 public constant SavingFee = 0.001 ether;
+  uint256 public constant JoinLimitFee = 0.0001 ether;
+  uint256 public constant SavingFee = 0.0001 ether;
   uint256 public constant ChildContractGasFee = SavingFee / 20;
 
   constructor(address _stableCoin, address _csToken) payable {

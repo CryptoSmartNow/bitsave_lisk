@@ -18,3 +18,10 @@ npx hardhat ignition deploy ./ignition/modules/Lock.ts
 
 Deployer Address
 `0x23D2d7CD86e9DeCA3b837400E6ffD490E2191cCD`
+
+
+## Contract details
+Contract address: `0x01f0443DaEC78fbaBb2D0927fEdFf5C20a4A39b5`  
+
+
+[Blockscout explorerer verified contract](https://sepolia-blockscout.lisk.com/address/0x01f0443DaEC78fbaBb2D0927fEdFf5C20a4A39b5?tab=contract)
