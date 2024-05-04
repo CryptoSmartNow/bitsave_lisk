@@ -11,3 +11,10 @@ REPORT_GAS=true npx hardhat test
 npx hardhat node
 npx hardhat ignition deploy ./ignition/modules/Lock.ts
 ```
+
+
+> [!NOTE]
+> Don't use safeMode for now since we don't have the uniswap contract
+
+Deployer Address
+`0x23D2d7CD86e9DeCA3b837400E6ffD490E2191cCD`
