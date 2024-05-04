@@ -58,7 +58,11 @@ library BitsaveHelperLib {
     ) internal returns (bool) {
       // first request approval
       require(
-        approveAmount(toApproveUserAddress, amountToWithdraw, targetToken),
+        // approveAmount(toApproveUserAddress, amountToWithdraw, targetToken),
+        IERC20(targetToken).allowance(
+          toApproveUserAddress,
+          address(this)
+        ) >= amountToWithdraw,
         "Token could not be withdrawn"
       );
       return IERC20(targetToken).transferFrom(

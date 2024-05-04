@@ -184,18 +184,21 @@ contract ChildBitsave {
                 savingPlusAmount
             );
         }else {
+          if (!isNativeToken) {
             BitsaveHelperLib.retrieveToken(
               bitsaveAddress,
                 toFundSavings.tokenId,
                 savingPlusAmount
             );
+          } else {
+            require(
+              msg.value >= savingPlusAmount, 
+              "Invalid saving increment value sent"
+            );
+            savingPlusAmount = msg.value;
+          }
         }
-
-        if (isNativeToken) {
-          require(msg.value >= savingPlusAmount, "Invalid saving increment value sent");
-        }
-
-        // calculate new interest
+               // calculate new interest
         uint recalculatedInterest = BitsaveHelperLib.calculateInterest(
           savingPlusAmount
         );

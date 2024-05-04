@@ -215,7 +215,8 @@ contract Bitsave {
             addressToUserBS[msg.sender]
         );
       ChildBitsave userChildContract = ChildBitsave(userChildContractAddress);
-      address savingToken = userChildContractAddress.getSavingTokenId(nameOfSavings);
+
+      address savingToken = userChildContract.getSavingTokenId(nameOfSavings);
       bool isNativeToken = savingToken == address(0);
         // todo: perform amount conversion and everything
         uint savingPlusAmount = amount;
@@ -236,17 +237,19 @@ contract Bitsave {
           require(
             BitsaveHelperLib.approveAmount(
               userChildContractAddress,
-              amount,
+              savingPlusAmount,
               tokenToRetrieve
             ),
             "Savings invalid"
           );
+        } else {
+          savingPlusAmount = msg.value;
         }
         // call withdrawSavings
         
         userChildContract.incrementSaving{
-          value: !isNativeToken ? 
-          ChildContractGasFee + amount : ChildContractGasFee
+          value: isNativeToken ? 
+          ChildContractGasFee + savingPlusAmount : ChildContractGasFee
         }(nameOfSavings, amount);
     }
 

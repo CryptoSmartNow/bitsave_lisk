@@ -295,6 +295,7 @@ describe("Bitsave", function() {
       maturityTime: Math.round(Date.now() / 1000 + 3000).toString(),
       penaltyPercentage: ethers.toBigInt(1),
       amountEth: ethers.parseEther("0.1"),
+      incrementValue: ethers.parseEther("0.06")
     }
 
     describe("Actions", function() {
@@ -304,6 +305,11 @@ describe("Bitsave", function() {
         const userChildContractAddress = await bitsave
           .connect(optedUser).getUserChildContractAddress();
 
+      const c1 =
+          await ethers.provider.getBalance(userChildContractAddress);
+
+        console.log("c1", c1)
+
         await (
           bitsave.connect(optedUser)
             .createSaving(
@@ -312,21 +318,32 @@ describe("Bitsave", function() {
               savingData.penaltyPercentage,
               false,
               ethers.ZeroAddress,
-              ethers.parseEther("0.1"),
-              { value: Constants.savingFee }
+              savingData.amountEth,
+              { value: savingData.amountEth }
             )
         );
 
-        const walletInitialBalance =
+        const contractInitialBalance =
           await ethers.provider.getBalance(userChildContractAddress);
 
+        console.log("c2", contractInitialBalance)
+
         await (
-        bitsave.connect(optedUser).incrementSaving(
+          bitsave.connect(optedUser).incrementSaving(
             savingData.name,
             ethers.ZeroAddress,
-            savingData.amountEth
+            ethers.parseEther("0"),
+            {value: savingData.incrementValue}
           )
         )
+
+        const contractFinalBalance = 
+          await ethers.provider.getBalance(userChildContractAddress);
+
+        console.log("c3", contractFinalBalance)
+
+        expect(contractFinalBalance - contractInitialBalance)
+          .greaterThanOrEqual(savingData.incrementValue)
 
       });
       it("Should revert on invalid savings");
