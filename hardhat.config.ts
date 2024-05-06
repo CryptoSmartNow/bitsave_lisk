@@ -11,6 +11,7 @@ const config: HardhatUserConfig = {
       url: 'https://rpc.sepolia-api.lisk.com',
       accounts: [process.env.WALLET_KEY as string],
       gasPrice: 1000000000,
+      timeout: 60000,
     },
   },
   // Hardhat expects etherscan here, even if you're using Blockscout.

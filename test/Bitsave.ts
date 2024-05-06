@@ -32,7 +32,7 @@ describe("Bitsave", function() {
     await bitsave.connect(optedUser).joinBitsave({ value: Constants.joinFee });
 
     // Connect back to owner
-    bitsave.connect(owner);
+    await bitsave.connect(owner).joinBitsave({ value: Constants.joinFee });
 
     const ChildBitsave = await hre.ethers.getContractFactory("ChildBitsave")
 
@@ -128,8 +128,8 @@ describe("Bitsave", function() {
 
     describe("Actions", function() {
       it("Should revert if user is not a member", async function() {
-        const { bitsave } = await loadFixture(deployBitsave)
-        await expect(bitsave.createSaving(
+        const { bitsave, user_one } = await loadFixture(deployBitsave)
+        await expect(bitsave.connect(user_one).createSaving(
           savingData.name,
           savingData.maturityTime,
           savingData.penaltyPercentage,
@@ -141,11 +141,11 @@ describe("Bitsave", function() {
       });
 
       it("Should create a saving with all appropriate data", async function() {
-        const { bitsave, optedUser } = await loadFixture(deployBitsave);
+        const { bitsave, owner } = await loadFixture(deployBitsave);
         const optedUserBalanceBefore = await ethers.provider.getBalance(optedUser);
         console.log(optedUserBalanceBefore)
         await (
-          bitsave.connect(optedUser)
+          bitsave.connect(owner)
             .createSaving(
               savingData.name,
               savingData.maturityTime,
@@ -157,13 +157,13 @@ describe("Bitsave", function() {
             )
         );
         const userChildContractAddress = await bitsave
-          .connect(optedUser).getUserChildContractAddress();
+          .connect(owner).getUserChildContractAddress();
         console.log("uaddr", userChildContractAddress)
         const { userChildContract } = await childContractGenerate(userChildContractAddress);
 
         // @ts-ignore
         const hospitalSaving = await userChildContract
-          .connect(optedUser)
+          .connect(owner)
           .getSaving(savingData.name);
 
         expect(hospitalSaving.isValid).to.be.true;
@@ -174,9 +174,9 @@ describe("Bitsave", function() {
       });
 
       it("Should revert if saving fee is not sent", async function() {
-        const { bitsave, optedUser } = await loadFixture(deployBitsave);
+        const { bitsave, owner } = await loadFixture(deployBitsave);
         await expect(
-          bitsave.connect(optedUser)
+          bitsave.connect(owner)
             .createSaving(
               savingData.name,
               savingData.maturityTime,
@@ -190,9 +190,9 @@ describe("Bitsave", function() {
       });
 
       it("Should revert if time is invalid", async function() {
-        const { bitsave, optedUser } = await loadFixture(deployBitsave);
+        const { bitsave, owner } = await loadFixture(deployBitsave);
         await expect(
-          bitsave.connect(optedUser)
+          bitsave.connect(owner)
             .createSaving(
               savingData.name,
               Math.round(Date.now() / 1000 - 3000).toString(),
@@ -208,9 +208,9 @@ describe("Bitsave", function() {
 
       it("Should take note of saving mode and withdraw appropriately");
       it("Should revert if saving name has been used before", async function() {
-        const { bitsave, optedUser, ChildBitsave } = await loadFixture(deployBitsave);
+        const { bitsave, owner, ChildBitsave } = await loadFixture(deployBitsave);
         await (
-          bitsave.connect(optedUser)
+          bitsave.connect(owner)
             .createSaving(
               savingData.name,
               savingData.maturityTime,
@@ -223,7 +223,7 @@ describe("Bitsave", function() {
         );
 
         await expect(
-          bitsave.connect(optedUser)
+          bitsave.connect(owner)
             .createSaving(
               savingData.name,
               savingData.maturityTime,
@@ -239,14 +239,14 @@ describe("Bitsave", function() {
       });
 
       it("Should send gas fee to child contract", async function() {
-        const { bitsave, optedUser } = await loadFixture(deployBitsave);
+        const { bitsave, owner } = await loadFixture(deployBitsave);
 
         const userChildContractAddress = await bitsave
-          .connect(optedUser).getUserChildContractAddress();
+          .connect(owner).getUserChildContractAddress();
 
         const initialBalance = await ethers.provider.getBalance(userChildContractAddress);
         await (
-          bitsave.connect(optedUser)
+          bitsave.connect(owner)
             .createSaving(
               savingData.name,
               savingData.maturityTime,
@@ -266,9 +266,9 @@ describe("Bitsave", function() {
     describe("Events", function() {
       it("Should emit token withdrawal for not native token");
       it("Should emit saving created on successful saving", async function() {
-        const { bitsave, optedUser } = await loadFixture(deployBitsave);
+        const { bitsave, owner } = await loadFixture(deployBitsave);
         await expect(
-          bitsave.connect(optedUser)
+          bitsave.connect(owner)
             .createSaving(
               savingData.name,
               savingData.maturityTime,
@@ -300,13 +300,13 @@ describe("Bitsave", function() {
 
     describe("Actions", function() {
       it("Should increment savings value", async function() {
-        const { bitsave, optedUser, } = await loadFixture(deployBitsave);
+        const { bitsave, owner, } = await loadFixture(deployBitsave);
 
         const userChildContractAddress = await bitsave
-          .connect(optedUser).getUserChildContractAddress();
+          .connect(owner).getUserChildContractAddress();
 
         await (
-          bitsave.connect(optedUser)
+          bitsave.connect(owner)
             .createSaving(
               savingData.name,
               savingData.maturityTime,
@@ -322,7 +322,7 @@ describe("Bitsave", function() {
           await ethers.provider.getBalance(userChildContractAddress);
 
         await (
-          bitsave.connect(optedUser).incrementSaving(
+          bitsave.connect(owner).incrementSaving(
             savingData.name,
             ethers.ZeroAddress,
             ethers.parseEther("0"),
@@ -356,11 +356,11 @@ describe("Bitsave", function() {
 
     describe("Actions", function() {
       it("Should withdraw savings back", async function() {
-        const { bitsave, optedUser } = await loadFixture(deployBitsave);
-        const myInitialBalance = await ethers.provider.getBalance(optedUser);
+        const { bitsave, owner } = await loadFixture(deployBitsave);
+        const myInitialBalance = await ethers.provider.getBalance(owner);
 
         await (
-          bitsave.connect(optedUser)
+          bitsave.connect(owner)
             .createSaving(
               savingData.name,
               savingData.maturityTime,
@@ -372,14 +372,14 @@ describe("Bitsave", function() {
             )
         );
 
-        const myBalanceAfterSaving = await ethers.provider.getBalance(optedUser);
+        const myBalanceAfterSaving = await ethers.provider.getBalance(owner);
 
         // escape time percentage penalty
         time.increaseTo(Date.now() + 1000)
 
-        await (bitsave.connect(optedUser).withdrawSaving(savingData.name));
+        await (bitsave.connect(owner).withdrawSaving(savingData.name));
 
-        const myFinalBalance = await ethers.provider.getBalance(optedUser);
+        const myFinalBalance = await ethers.provider.getBalance(owner);
 
         expect(myFinalBalance - myBalanceAfterSaving).greaterThanOrEqual(
           savingData.amountEth - Constants.savingFee - ethers.parseEther("0.002") 
