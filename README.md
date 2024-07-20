@@ -15,6 +15,7 @@ Deployer Address
 
 ## Contract details
 Contract address: `0x01f0443DaEC78fbaBb2D0927fEdFf5C20a4A39b5`  
+Artifacts path : `artifacts/contracts/`
 
 
 [Blockscout explorerer verified contract](https://sepolia-blockscout.lisk.com/address/0x01f0443DaEC78fbaBb2D0927fEdFf5C20a4A39b5?tab=contract)
