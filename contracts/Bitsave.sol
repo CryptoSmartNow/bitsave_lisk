@@ -64,10 +64,14 @@ contract Bitsave {
 
   function joinBitsave(
     ) public payable returns (address) {
+        address ownerAddress = msg.sender;
+        address currAddr = addressToUserBS[ownerAddress];
+        if (currAddr != address(0)) {
+          return currAddr;
+        }
         if (msg.value < JoinLimitFee)
             revert BitsaveHelperLib.AmountNotEnough();
         // deploy child contract for user
-        address ownerAddress = msg.sender;
         address userBSAddress = address(
             new ChildBitsave(msg.sender, address(stableCoin))
         );
