@@ -6,6 +6,11 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 library BitsaveHelperLib {
     // Constants
     uint256 public constant txnCharge = 0.02 ether;
+    // For interest calculation
+    uint256 public constant maxSupply = 100_000_000;
+    uint256 public constant totalSupply = 15_000_000;
+    // just a default of 365 days
+    uint256 public constant yearInSeconds = 3600 * 24 * 365;
 
     // Errors
     error WrongGasContract();
@@ -72,12 +77,26 @@ library BitsaveHelperLib {
       );
     }
 
-    // TODO: integrate bitsave interest calculator
+    // integrate bitsave interest calculator
     function calculateInterest(
       uint256 amount
       // uint256 currBitsPointValue
     ) pure internal returns (uint accumulatedInterest) {
       accumulatedInterest = amount / 100;
+    }
+
+    function calculateInterestWithBTS(
+        // External data
+        uint256 principal,
+        uint256 timeInterval, // will be converted to years
+        // Internal data
+        uint256 vaultState,
+        uint256 totalValueLocked
+    ) pure internal returns (uint accumulatedInterest) {
+        uint256 crp = (totalSupply - vaultState) / vaultState * 100;
+        uint256 bsRate = maxSupply / (crp * totalValueLocked);
+        uint256 yearsTaken = timeInterval / yearInSeconds;
+        accumulatedInterest = principal * bsRate * yearsTaken / 100;
     }
 
     function transferToken(
