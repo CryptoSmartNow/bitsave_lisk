@@ -106,7 +106,8 @@ contract ChildBitsave {
         uint8 penaltyPercentage,
         address tokenId,
         uint256 amountToRetrieve,
-        bool isSafeMode
+        bool isSafeMode,
+        uint256 interest
     ) public payable bitsaveOnly returns (uint) {
         // ensure saving does not exist; ! todo: this wont work
         if (savings[name].isValid) revert BitsaveHelperLib.InvalidSaving();

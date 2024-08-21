@@ -21,6 +21,7 @@ library BitsaveHelperLib {
     error InvalidSaving();
     error CanNotWithdrawToken(string);
     error NotSupported(string);
+    error MasterCallRequired();
     // child contract specific
     error CallNotFromBitsave();
 
