@@ -119,6 +119,15 @@ contract Bitsave {
         // );
     }
 
+    /// Edit internal vault data
+    function editInternalData(
+        uint _newCurrentVaultState,
+        uint _newTotalValueLocked
+    ) public inhouseOnly {
+        currentVaultState = _newCurrentVaultState;
+        currentTotalValueLocked = _newTotalValueLocked;
+    }
+
     function createSaving(
         string memory nameOfSaving,
         uint256 maturityTime,
@@ -211,7 +220,8 @@ contract Bitsave {
             penaltyPercentage,
             tokenToSave,
             amount,
-            safeMode
+            safeMode,
+            accumulatedInterest
         );
 
         // emit saving created
@@ -268,6 +278,12 @@ contract Bitsave {
         } else {
             savingPlusAmount = msg.value;
         }
+        uint accumulatedInterest = BitsaveHelperLib.calculateInterestWithBTS(
+            savingPlusAmount,
+            0, // TODO: time interval
+            currentVaultState,
+            currentTotalValueLocked
+        );
         // call withdrawSavings
 
         userChildContract.incrementSaving{

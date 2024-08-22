@@ -61,24 +61,9 @@ describe("Bitsave", function() {
       expect(await bitsave.userCount()).to.equal(1);
     });
 
-    // it("Should receive and store the funds to lock", async function () {
-    //   const { lock, lockedAmount } = await loadFixture(
-    //     deployOneYearLockFixture
-    //   );
-    //
-    //   expect(await hre.ethers.provider.getBalance(lock.target)).to.equal(
-    //     lockedAmount
-    //   );
-    // });
-    //
-    // it("Should fail if the unlockTime is not in the future", async function () {
-    //   // We don't use the fixture here because we want a different deployment
-    //   const latestTime = await time.latest();
-    //   const Lock = await hre.ethers.getContractFactory("Lock");
-    //   await expect(Lock.deploy(latestTime, { value: 1 })).to.be.revertedWith(
-    //     "Unlock time should be in the future"
-    //   );
-    // });
+    it("Should receive changes to internal data by owner address and edit");
+    it("Should revert if any other address tries to change internal data");
+
   });
 
   describe("JoinBitsave", function() {
