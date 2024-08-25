@@ -13,6 +13,7 @@ contract ChildBitsave {
     address public ownerAddress;
 
     // *** Contract Storage ***
+    // total interests gathered; v1 shows points
 
     // structure of saving data
     struct SavingDataStruct {
@@ -106,7 +107,8 @@ contract ChildBitsave {
         address tokenId,
         uint256 amountToRetrieve,
         bool isSafeMode,
-        uint256 accumulatedInterest
+        uint256 currentVaultState,
+        uint256 currentTotalValueLocked
     ) public payable bitsaveOnly returns (uint) {
         // ensure saving does not exist; ! todo: this wont work
         if (savings[name].isValid) revert BitsaveHelperLib.InvalidSaving();
@@ -134,6 +136,13 @@ contract ChildBitsave {
                 savingsAmount = msg.value;
             }
         }
+
+        uint accumulatedInterest = BitsaveHelperLib.calculateInterestWithBTS(
+            savingsAmount,
+            maturityTime - startTime, // time interval
+            currentVaultState,
+            currentTotalValueLocked
+        );
 
         // store saving to map of savings
         savings[name] = SavingDataStruct({
@@ -163,7 +172,8 @@ contract ChildBitsave {
     function incrementSaving(
         string memory name,
         uint256 savingPlusAmount,
-        uint256 extraInterest
+        uint256 currentVaultState,
+        uint256 currentTotalValueLocked
     ) public payable bitsaveOnly returns (uint) {
 
         // fetch savings data
@@ -195,6 +205,14 @@ contract ChildBitsave {
                 savingPlusAmount = msg.value;
             }
         }
+
+        uint extraInterest = BitsaveHelperLib.calculateInterestWithBTS(
+            savingPlusAmount,
+            toFundSavings.maturityTime - block.timestamp, // time interval
+            currentVaultState,
+            currentTotalValueLocked
+        );
+
         // calculate new interest
         toFundSavings.interestAccumulated = toFundSavings.interestAccumulated + extraInterest;
         toFundSavings.amount = toFundSavings.amount + savingPlusAmount;

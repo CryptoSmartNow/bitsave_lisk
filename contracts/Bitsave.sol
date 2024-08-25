@@ -45,8 +45,8 @@ contract Bitsave {
         rewardPool = 0;
         userCount = 0;
         // TODO: correct initial values
-        currentVaultState = 0;
-        currentTotalValueLocked = 0;
+        currentVaultState = 1_000;
+        currentTotalValueLocked = 10_000;
     }
 
     modifier inhouseOnly() {
@@ -128,33 +128,11 @@ contract Bitsave {
         currentTotalValueLocked = _newTotalValueLocked;
     }
 
-    function createSaving(
-        string memory nameOfSaving,
-        uint256 maturityTime,
-        uint8 penaltyPercentage,
-        bool safeMode,
-        address tokenToSave, // address 0 for native coin
-        uint amount // discarded for native token; takes msg.value - SavingFee instead
-    ) public registeredOnly(msg.sender) payable {
-
-        if (msg.value < SavingFee)
-            revert BitsaveHelperLib.NotEnoughToPayGasFee();
-
-        if (block.timestamp > maturityTime)
-            revert BitsaveHelperLib.InvalidTime();
-
-        // NOTE: For now, no safeMode since no swap contract
-        if (safeMode) {
-            revert BitsaveHelperLib.NotSupported("No safe mode yet!");
-        }
-
-        // user's child contract address
-        address payable userChildContractAddress = getUserChildContractAddress(
-            msg.sender
-        );
-
-        uint256 startTime = block.timestamp;
-
+    function handleNativeSaving(
+        uint amount,
+        address tokenToSave,
+        address userChildContractAddress
+    ) private returns(uint) {
         // check if native currency saving
         if (tokenToSave != address(0)) {
             // savingToken = tokenToSave;
@@ -187,6 +165,40 @@ contract Bitsave {
         } else {
             amount = msg.value - SavingFee;
         }
+        return amount;
+    }
+
+    function createSaving(
+        string memory nameOfSaving,
+        uint256 maturityTime,
+        uint8 penaltyPercentage,
+        bool safeMode,
+        address tokenToSave, // address 0 for native coin
+        uint amount // discarded for native token; takes msg.value - SavingFee instead
+    ) public registeredOnly(msg.sender) payable {
+
+        if (msg.value < SavingFee)
+            revert BitsaveHelperLib.NotEnoughToPayGasFee();
+
+        if (block.timestamp > maturityTime)
+            revert BitsaveHelperLib.InvalidTime();
+
+        // NOTE: For now, no safeMode since no swap contract
+        if (safeMode) {
+            revert BitsaveHelperLib.NotSupported("No safe mode yet!");
+        }
+
+        // user's child contract address
+        address payable userChildContractAddress = getUserChildContractAddress(
+            msg.sender
+        );
+
+        // Handle token sent
+        uint amountRetrieved = handleNativeSaving(
+            amount,
+            tokenToSave,
+            userChildContractAddress
+        );
 
         // TODO:  perform conversion for stableCoin
         // functionality for safe mode
@@ -202,32 +214,27 @@ contract Bitsave {
 
         /// send savings request to child contract with a little gas
         // Initialize user's child contract
-        uint accumulatedInterest = BitsaveHelperLib.calculateInterestWithBTS(
-            amount,
-            0, // TODO: time interval
-            currentVaultState,
-            currentTotalValueLocked
-        );
         ChildBitsave userChildContract = ChildBitsave(userChildContractAddress);
 
         userChildContract.createSaving{
                 value: tokenToSave == address(0) ?
-                ChildContractGasFee + amount : ChildContractGasFee
+                ChildContractGasFee + amountRetrieved : ChildContractGasFee
             }(
             nameOfSaving,
             maturityTime,
-            startTime,
+            block.timestamp, // current time
             penaltyPercentage,
             tokenToSave,
-            amount,
+            amountRetrieved,
             safeMode,
-            accumulatedInterest
+            currentVaultState,
+            currentTotalValueLocked
         );
 
         // emit saving created
         emit BitsaveHelperLib.SavingCreated(
             nameOfSaving,
-            amount,
+            amountRetrieved,
             tokenToSave
         );
     }
@@ -278,18 +285,12 @@ contract Bitsave {
         } else {
             savingPlusAmount = msg.value;
         }
-        uint accumulatedInterest = BitsaveHelperLib.calculateInterestWithBTS(
-            savingPlusAmount,
-            0, // TODO: time interval
-            currentVaultState,
-            currentTotalValueLocked
-        );
         // call withdrawSavings
 
         userChildContract.incrementSaving{
                 value: isNativeToken ?
                 ChildContractGasFee + savingPlusAmount : ChildContractGasFee
-            }(nameOfSavings, amount);
+            }(nameOfSavings, amount, currentVaultState, currentTotalValueLocked);
     }
 
 /// WITHDRAW savings
