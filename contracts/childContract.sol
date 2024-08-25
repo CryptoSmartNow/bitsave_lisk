@@ -14,6 +14,7 @@ contract ChildBitsave {
 
     // *** Contract Storage ***
     // total interests gathered; v1 shows points
+    uint public totalPoints = 0;
 
     // structure of saving data
     struct SavingDataStruct {
@@ -32,6 +33,26 @@ contract ChildBitsave {
 
     struct SavingsNamesObj {
         string[] savingsNames;
+    }
+
+    function updatePoints(uint newPoint) internal {
+        totalPoints = totalPoints + newPoint;
+    }
+
+    function calculateAndUpdatePoints(
+        uint savingAmount,
+        uint endTime,
+        uint startTime,
+        uint currentVaultState,
+        uint currentTotalValueLocked
+    ) internal returns (uint accumulatedInterest){
+        accumulatedInterest = BitsaveHelperLib.calculateInterestWithBTS(
+            savingAmount,
+            endTime - startTime, // time interval
+            currentVaultState,
+            currentTotalValueLocked
+        );
+        updatePoints(accumulatedInterest);
     }
 
     SavingsNamesObj private savingsNamesVar;
@@ -78,26 +99,6 @@ contract ChildBitsave {
         return savings[nameOfSaving];
     }
 
-    // TODO: Funds cleanup functionalities
-
-// function sendAsOriginalToken(
-//         address originalToken,
-//         uint amount,
-//         address ownerAddress
-//     ) public payable {
-//         // check amount sent
-//         // if (amount < poolFee) revert BitsaveHelperLib.AmountNotEnough();
-//         // retrieve stable coin used from owner address
-//         BitsaveHelperLib.retrieveToken(ownerAddress, address(stableCoin), amount);
-//         // convert to original token using crossChainSwap()
-//         // crossChainSwap(
-//         //     stableCoin,
-//         //     originalToken,
-//         //     amount,
-//         //     ownerAddress // send to owner address directly
-//         // );
-//     }
-
     // functionality to create savings
     function createSaving(
         string memory name,
@@ -137,9 +138,10 @@ contract ChildBitsave {
             }
         }
 
-        uint accumulatedInterest = BitsaveHelperLib.calculateInterestWithBTS(
+        uint accumulatedInterest = calculateAndUpdatePoints(
             savingsAmount,
-            maturityTime - startTime, // time interval
+            maturityTime,
+            startTime,
             currentVaultState,
             currentTotalValueLocked
         );
@@ -206,9 +208,10 @@ contract ChildBitsave {
             }
         }
 
-        uint extraInterest = BitsaveHelperLib.calculateInterestWithBTS(
+        uint extraInterest = calculateAndUpdatePoints(
             savingPlusAmount,
-            toFundSavings.maturityTime - block.timestamp, // time interval
+            toFundSavings.maturityTime,
+            block.timestamp,
             currentVaultState,
             currentTotalValueLocked
         );
