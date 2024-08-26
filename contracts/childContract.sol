@@ -14,7 +14,7 @@ contract ChildBitsave {
 
     // *** Contract Storage ***
     // total interests gathered; v1 shows points
-    uint public totalPoints = 0;
+    uint public totalPoints;
 
     // structure of saving data
     struct SavingDataStruct {
@@ -35,7 +35,7 @@ contract ChildBitsave {
         string[] savingsNames;
     }
 
-    function updatePoints(uint newPoint) internal {
+    function updatePoints(uint newPoint) private {
         totalPoints = totalPoints + newPoint;
     }
 
@@ -52,7 +52,8 @@ contract ChildBitsave {
             currentVaultState,
             currentTotalValueLocked
         );
-        updatePoints(accumulatedInterest);
+
+        totalPoints = accumulatedInterest;
     }
 
     SavingsNamesObj private savingsNamesVar;
@@ -64,6 +65,8 @@ contract ChildBitsave {
         ownerAddress = payable(_ownerAddress);
         // store stable coin
         stableCoin = IERC20(payable(_stableCoin));
+        // storage
+        totalPoints = 0;
     }
 
     modifier bitsaveOnly() {
@@ -111,7 +114,7 @@ contract ChildBitsave {
         uint256 currentVaultState,
         uint256 currentTotalValueLocked
     ) public payable bitsaveOnly returns (uint) {
-        // ensure saving does not exist; ! todo: this wont work
+        // ensure saving does not exist; !
         if (savings[name].isValid) revert BitsaveHelperLib.InvalidSaving();
         // check if end time valid
         if (maturityTime < startTime) revert BitsaveHelperLib.InvalidTime();

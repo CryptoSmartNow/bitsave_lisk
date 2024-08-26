@@ -55,10 +55,10 @@ describe("Bitsave", function() {
 
       expect(await bitsave.masterAddress()).to.equal(await owner.getAddress())
     });
-    it("Should set the user count to one since we have a default user", async function() {
+    it("Should set the user count to two since we have 2 default user", async function() {
       const { bitsave } = await loadFixture(deployBitsave);
 
-      expect(await bitsave.userCount()).to.equal(1);
+      expect(await bitsave.userCount()).to.equal(2);
     });
 
     it("Should receive changes to internal data by owner address and edit");
@@ -75,8 +75,8 @@ describe("Bitsave", function() {
       });
 
       it("Should revert with AmountNotEnough if join fee is lower than limit", async function() {
-        const { Bitsave, bitsave } = await loadFixture(deployBitsave);
-        await expect(bitsave.joinBitsave({ value: 2 })).to.be.revertedWithCustomError(
+        const { Bitsave, bitsave, user_one } = await loadFixture(deployBitsave);
+        await expect(bitsave.connect(user_one).joinBitsave({ value: 2 })).to.be.revertedWithCustomError(
           Bitsave,
           "AmountNotEnough")
       });
@@ -94,10 +94,10 @@ describe("Bitsave", function() {
 
     describe("Events", function() {
       it("Should emit event on join bitsave successfully", async function() {
-        const { bitsave, owner } = await loadFixture(deployBitsave);
-        await expect(bitsave.joinBitsave({ value: Constants.joinFee }))
+        const { bitsave,  user_one } = await loadFixture(deployBitsave);
+        await expect(bitsave.connect(user_one).joinBitsave({ value: Constants.joinFee }))
           .to.emit(bitsave, "JoinedBitsave")
-          .withArgs(await owner.getAddress())
+          .withArgs(await user_one.getAddress())
       })
     })
   })
@@ -126,9 +126,8 @@ describe("Bitsave", function() {
       });
 
       it("Should create a saving with all appropriate data", async function() {
-        const { bitsave, owner } = await loadFixture(deployBitsave);
+        const { bitsave, owner, optedUser } = await loadFixture(deployBitsave);
         const optedUserBalanceBefore = await ethers.provider.getBalance(optedUser);
-        console.log(optedUserBalanceBefore)
         await (
           bitsave.connect(owner)
             .createSaving(
@@ -143,7 +142,6 @@ describe("Bitsave", function() {
         );
         const userChildContractAddress = await bitsave
           .connect(owner).getUserChildContractAddress();
-        console.log("uaddr", userChildContractAddress)
         const { userChildContract } = await childContractGenerate(userChildContractAddress);
 
         // @ts-ignore
@@ -247,6 +245,55 @@ describe("Bitsave", function() {
         expect((finalBalance - initialBalance).valueOf())
           .to.be.greaterThan(Constants.savingFee.valueOf())
       });
+
+      // Child contract
+      it("Should increment totalPoints by interest value", async function() {
+        const { bitsave, ChildBitsave, owner } = await loadFixture(deployBitsave);
+        const userChildContractAddress = await bitsave.connect(owner).getUserChildContractAddress();
+
+
+        const { userChildContract: attachedChildContract } = await childContractGenerate(userChildContractAddress);
+        const totalPoints = await attachedChildContract.connect(owner)
+            .totalPoints();
+        expect(totalPoints).to.be.eq(0);
+
+        // Create saving and track point
+        await (
+          bitsave.connect(owner)
+            .createSaving(
+              savingData.name,
+              savingData.maturityTime,
+              savingData.penaltyPercentage,
+              false,
+              ethers.ZeroAddress,
+              savingData.amountEth,
+              { value: Constants.savingFee + savingData.amountEth }
+            )
+        );
+
+        //fetch saving from child contract
+        const hospitalSaving = await attachedChildContract
+          .connect(owner)
+          .getSaving(savingData.name);
+
+
+        const totalPointsAfterSaving = await attachedChildContract.connect(owner).totalPoints();
+        console.log(totalPointsAfterSaving, hospitalSaving.interestAccumulated, hospitalSaving.amount)
+
+        expect(totalPointsAfterSaving).to.be
+            .eq(
+                hospitalSaving.interestAccumulated,
+                "Accumulated Interest not equal to total point"
+            )
+
+        expect(totalPointsAfterSaving)
+            .to.be
+            .eq(
+                savingData.amountEth * ethers.toBigInt(10),
+                "Point system doesn't multiply amount by 10"
+            )
+
+      })
     });
     describe("Events", function() {
       it("Should emit token withdrawal for not native token");

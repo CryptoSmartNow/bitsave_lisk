@@ -2,8 +2,11 @@
 pragma solidity ^0.8.23;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "prb-math/contracts/PRBMathUD60x18.sol";
 
 library BitsaveHelperLib {
+    using PRBMathUD60x18 for uint256;
+
     // Constants
     uint256 public constant txnCharge = 0.02 ether;
     // For interest calculation
@@ -94,10 +97,11 @@ library BitsaveHelperLib {
         uint256 vaultState,
         uint256 totalValueLocked
     ) pure internal returns (uint accumulatedInterest) {
-        uint256 crp = (totalSupply - vaultState) / vaultState * 100;
-        uint256 bsRate = maxSupply / (crp * totalValueLocked);
-        uint256 yearsTaken = timeInterval / yearInSeconds;
-        accumulatedInterest = principal * bsRate * yearsTaken / 100;
+
+        uint crp = ((totalSupply - vaultState).div(vaultState)).mul(100);
+        uint bsRate = maxSupply.div(crp * totalValueLocked);
+        uint yearsTaken = timeInterval.div(yearInSeconds);
+        accumulatedInterest = ((principal * bsRate * yearsTaken).div(100)).toUint();
     }
 
     function transferToken(

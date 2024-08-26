@@ -45,8 +45,8 @@ contract Bitsave {
         rewardPool = 0;
         userCount = 0;
         // TODO: correct initial values
-        currentVaultState = 1_000;
-        currentTotalValueLocked = 10_000;
+        currentVaultState = 10_000_000;
+        currentTotalValueLocked = 30_000_000;
     }
 
     modifier inhouseOnly() {
