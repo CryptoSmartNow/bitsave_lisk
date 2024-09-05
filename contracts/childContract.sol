@@ -260,6 +260,7 @@ contract ChildBitsave {
         // send the savings amount to withdraw
         address tokenId = toWithdrawSavings.tokenId;
         // function can be abstracted for sending token out
+        bool isDelivered = false;
         if (toWithdrawSavings.isSafeMode) {
             // approve withdrawal from parent contract
             BitsaveHelperLib.approveAmount(
@@ -268,7 +269,7 @@ contract ChildBitsave {
                 address(stableCoin)
             );
             // call parent for conversion
-            bitsave
+            isDelivered = bitsave
             .sendAsOriginalToken(
                 tokenId,
                 amountToWithdraw,
@@ -280,7 +281,7 @@ contract ChildBitsave {
                                     ownerAddress.call{value: amountToWithdraw}("");
                 require(sent, "Couldn't send funds");
             } else {
-                BitsaveHelperLib.transferToken(
+                isDelivered = BitsaveHelperLib.transferToken(
                     toWithdrawSavings.tokenId,
                     ownerAddress,
                     amountToWithdraw
@@ -289,13 +290,17 @@ contract ChildBitsave {
             }
         }
         // Delete savings; ensure saving is deleted/made invalid
-        savings[name].isValid = false;
+        if(isDelivered) {
+            savings[name].isValid = false;
 
-        emit BitsaveHelperLib.SavingWithdrawn(
-            name
-        );
+            emit BitsaveHelperLib.SavingWithdrawn(
+                name
+            );
 
-        return "savings withdrawn successfully";
+            return "savings withdrawn successfully";
+        }
+
+        return "Failed";
     }
 }
 

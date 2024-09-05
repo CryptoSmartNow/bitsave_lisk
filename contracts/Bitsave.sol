@@ -45,8 +45,8 @@ contract Bitsave {
         rewardPool = 0;
         userCount = 0;
         // TODO: correct initial values
-        currentVaultState = 10_000_000;
-        currentTotalValueLocked = 30_000_000;
+        currentVaultState = 14_000_000;
+        currentTotalValueLocked = 100_000;
     }
 
     modifier inhouseOnly() {
@@ -102,11 +102,11 @@ contract Bitsave {
         address originalToken,
         uint amount,
         address ownerAddress
-    ) public payable fromABitsaveChildOnly(ownerAddress) {
+    ) public payable fromABitsaveChildOnly(ownerAddress) returns (bool) {
         // check amount sent
         // if (amount < poolFee) revert BitsaveHelperLib.AmountNotEnough();
         // retrieve stable coin used from owner address
-        BitsaveHelperLib.retrieveToken(
+        return BitsaveHelperLib.retrieveToken(
             msg.sender,
             address(stableCoin), amount
         );

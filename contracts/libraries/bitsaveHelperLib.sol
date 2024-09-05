@@ -14,6 +14,7 @@ library BitsaveHelperLib {
     uint256 public constant totalSupply = 15_000_000;
     // just a default of 365 days
     uint256 public constant yearInSeconds = 3600 * 24 * 365;
+    uint256 public constant divisor = 1_000 ether;
 
     // Errors
     error WrongGasContract();
@@ -101,18 +102,18 @@ library BitsaveHelperLib {
         uint crp = ((totalSupply - vaultState).div(vaultState)).mul(100);
         uint bsRate = maxSupply.div(crp * totalValueLocked);
         uint yearsTaken = timeInterval.div(yearInSeconds);
-        accumulatedInterest = ((principal * bsRate * yearsTaken).div(100)).toUint();
+        accumulatedInterest = ((principal * bsRate * yearsTaken).div(100*divisor)).toUint();
     }
 
     function transferToken(
         address token,
         address recipient,
         uint amount
-    ) internal {
+    ) internal returns (bool isDelivered) {
         IERC20 Token = IERC20(token);
 
         // convert address to Byte
-        Token.transfer(recipient, amount);
+        isDelivered = Token.transfer(recipient, amount);
 
         emit TokenWithdrawal(
             address(this),
