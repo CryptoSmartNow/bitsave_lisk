@@ -25,6 +25,8 @@ contract Bitsave {
     IERC20 public csToken;
     address public masterAddress;
     uint256 public rewardPool;
+    // *** Fountain ***
+    uint256 public fountain;
 
     // *** Storage ***
     mapping(address => address) addressToUserBS;
@@ -33,10 +35,10 @@ contract Bitsave {
     uint256 public currentVaultState;
     uint256 public currentTotalValueLocked;
 
-    // *** Constants ***
-    uint256 public constant JoinLimitFee = 0.0001 ether;
-    uint256 public constant SavingFee = 0.0001 ether;
-    uint256 public constant ChildContractGasFee = SavingFee / 20;
+    // *** savings values ***
+    uint256 public JoinLimitFee = 0.0001 ether;
+    uint256 public SavingFee = 0.0001 ether;
+    uint256 public ChildContractGasFee = SavingFee / 20;
 
     constructor(address _stableCoin, address _csToken) payable {
         stableCoin = IERC20(_stableCoin);
@@ -44,9 +46,10 @@ contract Bitsave {
         masterAddress = msg.sender;
         rewardPool = 0;
         userCount = 0;
-        // TODO: correct initial values
+        // initial values
         currentVaultState = 14_000_000;
         currentTotalValueLocked = 100_000;
+        fountain = msg.value;
     }
 
     modifier inhouseOnly() {
@@ -122,10 +125,45 @@ contract Bitsave {
     /// Edit internal vault data
     function editInternalData(
         uint _newCurrentVaultState,
-        uint _newTotalValueLocked
+        uint _newTotalValueLocked,
+        address _newCsToken
     ) public inhouseOnly {
         currentVaultState = _newCurrentVaultState;
         currentTotalValueLocked = _newTotalValueLocked;
+        if (_newCsToken != address(0)) {
+            csToken = IERC20(_newCsToken);
+        }
+    }
+
+    /// Edit internal stablecoin data
+    function editStableCoin(
+        address _newStableCoin
+    ) public inhouseOnly {
+        if (_newStableCoin != address(0)) {
+            stableCoin = IERC20(_newStableCoin);
+        }
+    }
+
+    /// Edit internal vault data
+    function editFees(
+        uint _joinFee,
+        uint _savingFee
+    ) public inhouseOnly {
+        if (_joinFee != 0) {
+            JoinLimitFee = _joinFee;
+        }
+        if(_savingFee != 0) {
+            SavingFee = _savingFee;
+            ChildContractGasFee = _savingFee / 20;
+        }
+    }
+
+    function dripFountain() public inhouseOnly {
+        // send balance - fountain to masterAddress
+        uint256 balance = address(this).balance;
+        if (balance > fountain) {
+            payable(masterAddress).transfer(balance - fountain);
+        }
     }
 
     function handleNativeSaving(

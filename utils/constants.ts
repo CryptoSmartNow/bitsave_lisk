@@ -1,13 +1,13 @@
 import { ethers } from "hardhat";
 
 export const Constants = {
-  stableCoin: "0x2728DD8B45B788e26d12B13Db5A244e5403e7eda", // usdt lisk
+  stableCoin: "0x05D032ac25d322df992303dCa074EE7392C117b9", // usdt lisk
   stableCoinName: "usdt-lisk",
-  masterAddress: "0x23D2d7CD86e9DeCA3b837400E6ffD490E2191cCD",
+  masterAddress: "0x125629FAab442e459C1015FCBa50499D0aAB8EE0",
   csToken: ethers.ZeroAddress, // For bitsave token point system
-  initialBalance: ethers.parseEther("0.01"),
-  DAIAddress: "0x6b175474e89094c44da98b954eedeac495271d0f",
-  joinFee: ethers.parseEther("0.0001"),
-  savingFee: ethers.parseEther("0.0001")
+  initialBalance: ethers.parseEther("0.000000001"),
+  DAIAddress: ethers.ZeroAddress, // TODO: DAI Address
+  joinFee: ethers.parseEther("0.0000001"),
+  savingFee: ethers.parseEther("0.0000001")
 }
 
