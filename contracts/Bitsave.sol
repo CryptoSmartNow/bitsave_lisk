@@ -310,25 +310,31 @@ contract Bitsave {
             tokenToRetrieve = address(stableCoin);
 
         }
-        if (!isNativeToken) {
-            // approve child contract withdrawing token
-            require(
-                BitsaveHelperLib.approveAmount(
-                    userChildContractAddress,
-                    savingPlusAmount,
-                    tokenToRetrieve
-                ),
-                "Savings invalid"
-            );
-        } else {
-            savingPlusAmount = msg.value;
-        }
+        // if (!isNativeToken) {
+        //     // approve child contract withdrawing token
+        //     require(
+        //         BitsaveHelperLib.approveAmount(
+        //             userChildContractAddress,
+        //             savingPlusAmount,
+        //             tokenToRetrieve
+        //         ),
+        //         "Savings invalid"
+        //     );
+        // } else {
+        //     savingPlusAmount = msg.value;
+        // }
+
+        uint amountRetrieved = handleNativeSaving(
+            amount,
+            tokenToRetrieve,
+            userChildContractAddress
+        );
         // call withdrawSavings
 
         userChildContract.incrementSaving{
                 value: isNativeToken ?
                 ChildContractGasFee + savingPlusAmount : ChildContractGasFee
-            }(nameOfSavings, amount, currentVaultState, currentTotalValueLocked);
+            }(nameOfSavings, amountRetrieved, currentVaultState, currentTotalValueLocked);
     }
 
 /// WITHDRAW savings

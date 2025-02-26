@@ -5,19 +5,53 @@ import { pk_account, publicClient, walletClientL2 } from "../utils/client";
 import { getContract } from 'viem'
 require("@nomicfoundation/hardhat-toolbox");
 import { bitsaveAbi } from '../artifacts/abi/bitsave'
+import { erc20Abi } from '../artifacts/abi/erc20'
+import { Constants } from "../utils/constants";
 
 
-const ct_address = '0x1a8A45d8bD38D2D13598B988b6c2121C3FEd816d'
+const ct_address = '0x0C4A310695702ed713BCe816786Fcc31C11fe932'
+
+const lsk_token = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+// const lsk_token = "0xac485391EB2d7D88253a7F1eF18C37f4242D1A24"
+
+const savingName = "Xsavy"
 
 // 1. Create contract instance
 const contract = getContract({
-  address: '0x01f0443DaEC78fbaBb2D0927fEdFf5C20a4A39b5',
+  address: ct_address,
   abi: bitsaveAbi,
   // 1a. Insert a single client
   //client: publicClient,
   // 1b. Or public and/or wallet clients
   client: { public: publicClient, wallet: walletClientL2 }
 })
+
+const erc20Contract = getContract({
+  address: lsk_token,
+  abi: erc20Abi,
+  // 1a. Insert a single client
+  //client: publicClient,
+  // 1b. Or public and/or wallet clients
+  client: { public: publicClient, wallet: walletClientL2 }
+})
+
+task("approve-bitsave", "Handles erc20 approval bitsave").setAction(async () => {
+  const logs = await contract.getEvents.Transfer()
+  const { request } = await publicClient.simulateContract({
+    account: pk_account,
+    address: lsk_token,
+    abi: erc20Abi,
+    functionName: 'approve',
+  args: [
+    ct_address,
+    ethers.parseEther("1")
+      ],
+  })
+  const res = await walletClientL2.writeContract(request)
+  console.log("LOGS", logs);
+  console.log("C Address");
+  console.log("JB", res);
+});
 
 task("join-bitsave", "Handles joining bitsave").setAction(async () => {
   const logs = await contract.getEvents.Transfer()
@@ -45,14 +79,14 @@ task("create-saving", "Handles joining bitsave").setAction(async () => {
     abi: bitsaveAbi,
     functionName: 'createSaving',
     args: [
-      "Home",
-      Math.round(Date.now() / 1000 + 3000).toString(),
+      savingName,
+      Math.round(Date.now() / 1000 + 3_000_000).toString(),
       ethers.toBigInt(1),
       false,
-      ethers.ZeroAddress,
-      ethers.parseEther("0.0005"),
+      lsk_token,
+      ethers.parseEther("0.0001"),
     ],
-    value: ethers.parseEther("0.0005")
+    value: ethers.parseEther("0.0001")
   })
   const res = await walletClientL2.writeContract(request)
   console.log("LOGS", logs);
@@ -69,11 +103,12 @@ task("increment-saving", "Handles incrementing saving").setAction(async () => {
     abi: bitsaveAbi,
     functionName: 'incrementSaving',
     args: [
-      "Home",
-      ethers.ZeroAddress,
-      ethers.parseEther("0.0005"),
+      savingName,
+      lsk_token,
+      // ethers.ZeroAddress,
+      ethers.parseEther("0.22"),
     ],
-    value: ethers.parseEther("0.0005")
+    value: ethers.parseEther("0.00003")
   })
   const res = await walletClientL2.writeContract(request)
   console.log("LOGS", logs);
@@ -90,7 +125,7 @@ task("withdraw-saving", "Handles joining bitsave").setAction(async () => {
     abi: bitsaveAbi,
     functionName: 'withdrawSaving',
     args: [
-      "Home",
+      savingName,
     ],
   })
   const res = await walletClientL2.writeContract(request)

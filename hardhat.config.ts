@@ -20,6 +20,7 @@ const config: HardhatUserConfig = {
       accounts: [process.env.PROD_WALLET_KEY as string],
       timeout: 60000,
     }
+    // we can add base here
   },
   // Hardhat expects etherscan here, even if you're using Blockscout.
   etherscan: {
