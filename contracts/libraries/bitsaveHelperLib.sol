@@ -31,28 +31,28 @@ library BitsaveHelperLib {
 
     // Events
     event JoinedBitsave(
-        address userAddress
+        address indexed userAddress
     );
     event SavingCreated(
-        string nameOfSaving,
+        string indexed nameOfSaving,
         uint amount,
         address token
     );
     event SavingIncremented(
-        string nameOfSaving,
+        string indexed nameOfSaving,
         uint amountAdded,
         uint totalAmountNow,
         address token
     );
     event SavingWithdrawn(
-        string nameOfSaving
+        string indexed nameOfSaving
     );
     event TokenWithdrawal(
         address indexed from,
-        address to,
+        address indexed to,
         uint amount
     );
-    event Received(address, uint);
+    event Received(address indexed, uint);
 
     function approveAmount(
         address toApproveUserAddress,

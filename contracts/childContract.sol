@@ -280,6 +280,7 @@ contract ChildBitsave {
                 (bool sent, bytes memory data) =
                                     ownerAddress.call{value: amountToWithdraw}("");
                 require(sent, "Couldn't send funds");
+                isDelivered = sent;
             } else {
                 isDelivered = BitsaveHelperLib.transferToken(
                     toWithdrawSavings.tokenId,
@@ -300,7 +301,7 @@ contract ChildBitsave {
             return "savings withdrawn successfully";
         }
 
-        return "Failed";
+        revert();
     }
 }
 
