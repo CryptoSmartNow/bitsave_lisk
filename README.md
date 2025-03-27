@@ -13,19 +13,25 @@ bitsave token is available on the lisk blockchain.
 Deployer Address
 `0x23D2d7CD86e9DeCA3b837400E6ffD490E2191cCD`
 
+## Deployer, chain ID's combination
+0x23D2d7CD86e9DeCA3b837400E6ffD490E2191cCD, 1135
+0x23D2d7CD86e9DeCA3b837400E6ffD490E2191cCD, 8453
+0x23D2d7CD86e9DeCA3b837400E6ffD490E2191cCD, 44787
+
+
 ## Contract details
 Contract address:
 ```
 # Current:
-0x1a8A45d8bD38D2D13598B988b6c2121C3FEd816d
-# Old:
-v0: 0x01f0443DaEC78fbaBb2D0927fEdFf5C20a4A39b5`  
+  
 ```
 Artifacts path : `artifacts/contracts/`
 
 
 [Blockscout explorerer verified contract](https://sepolia-blockscout.lisk.com/address/0x01f0443DaEC78fbaBb2D0927fEdFf5C20a4A39b5?tab=contract)
 
+Mainnet
+https://basescan.org/address/0x3593546078eecd0ffd1c19317f53ee565be6ca13
 
 # Sample Hardhat Project
 
