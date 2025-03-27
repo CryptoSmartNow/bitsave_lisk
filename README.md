@@ -7,6 +7,8 @@ reward users points that are not fixed but adjust based on market
 values. Integrating this would be after the uniswap contract is in place and
 bitsave token is available on the lisk blockchain.
 
+[Blockscout main chain](https://blockscout.lisk.com/address/0x3593546078eECD0FFd1c19317f53ee565be6ca13)
+
 > [!NOTE]
 > Don't use safeMode for now since we don't have the uniswap contract
 
@@ -28,7 +30,7 @@ Contract address:
 Artifacts path : `artifacts/contracts/`
 
 
-[Blockscout explorerer verified contract](https://sepolia-blockscout.lisk.com/address/0x01f0443DaEC78fbaBb2D0927fEdFf5C20a4A39b5?tab=contract)
+[Blockscout explorerer testnet verified contract](https://sepolia-blockscout.lisk.com/address/0x01f0443DaEC78fbaBb2D0927fEdFf5C20a4A39b5?tab=contract)
 
 Mainnet
 https://basescan.org/address/0x3593546078eecd0ffd1c19317f53ee565be6ca13
