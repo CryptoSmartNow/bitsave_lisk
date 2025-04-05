@@ -13,7 +13,7 @@ bitsave token is available on the lisk blockchain.
 > Don't use safeMode for now since we don't have the uniswap contract
 
 Deployer Address
-`0x23D2d7CD86e9DeCA3b837400E6ffD490E2191cCD`
+`0x125629FAab442e459C1015FCBa50499D0aAB8EE0`
 
 ## Deployer, chain ID's combination
 0x125629FAab442e459C1015FCBa50499D0aAB8EE0, 1135
